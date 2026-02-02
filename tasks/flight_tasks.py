@@ -21,10 +21,13 @@ def fetch_flight_positions(self):
         with app.app_context():
             flights_data = fetch_external_flight_data()
             
+            # Optimization: Batch fetch flights to avoid N+1 queries
+            callsigns = [fd.get('callsign') for fd in flights_data if fd.get('callsign')]
+            flights = Flight.query.filter(Flight.callsign.in_(callsigns)).all()
+            flight_map = {f.callsign: f for f in flights}
+
             for flight_data in flights_data:
-                flight = Flight.query.filter_by(
-                    callsign=flight_data.get('callsign')
-                ).first()
+                flight = flight_map.get(flight_data.get('callsign'))
                 
                 if flight:
                     lat = flight_data.get('latitude')
