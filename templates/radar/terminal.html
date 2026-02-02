@@ -2,50 +2,170 @@
 
 {% block title %}Terminal - ATM-RDC{% endblock %}
 {% block page_title %}Radar Aéroportuaire{% endblock %}
-{% block page_subtitle %}Gestion des mouvements au sol{% endblock %}
+{% block page_subtitle %}Gestion des mouvements au sol - Cycle Atterrissage{% endblock %}
+
+{% block head %}
+<style>
+    .cycle-step {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .cycle-step::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 24px;
+        bottom: -16px;
+        width: 2px;
+        background: linear-gradient(to bottom, currentColor 50%, transparent 50%);
+        background-size: 2px 8px;
+    }
+    
+    .cycle-step:last-child::before {
+        display: none;
+    }
+    
+    .cycle-icon {
+        position: absolute;
+        left: 0;
+        top: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+    
+    .parking-timer {
+        font-family: monospace;
+        font-size: 1.1em;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm mb-1">En Approche</p>
+                <p class="text-2xl font-bold text-yellow-400" id="approach-count" data-testid="text-approach-count">{{ inbound|selectattr('flight_status', 'equalto', 'approaching')|list|length }}</p>
+            </div>
+            <i class="fas fa-plane-arrival text-yellow-400 text-xl"></i>
+        </div>
+    </div>
+    
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm mb-1">En Route</p>
+                <p class="text-2xl font-bold text-green-400" data-testid="text-enroute-count">{{ inbound|selectattr('flight_status', 'equalto', 'in_flight')|list|length }}</p>
+            </div>
+            <i class="fas fa-route text-green-400 text-xl"></i>
+        </div>
+    </div>
+    
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Au Sol</p>
+                <p class="text-2xl font-bold text-blue-400" id="ground-count" data-testid="text-ground-count">{{ on_ground|length }}</p>
+            </div>
+            <i class="fas fa-parking text-blue-400 text-xl"></i>
+        </div>
+    </div>
+    
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Total Inbound</p>
+                <p class="text-2xl font-bold text-white" data-testid="text-inbound-total">{{ inbound|length }}</p>
+            </div>
+            <i class="fas fa-plane text-primary-400 text-xl"></i>
+        </div>
+    </div>
+    
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-5">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-400 text-sm mb-1">Aéroports Actifs</p>
+                <p class="text-2xl font-bold text-white" data-testid="text-airports-active">{{ airports|selectattr('status', 'equalto', 'open')|list|length }}</p>
+            </div>
+            <i class="fas fa-tower-broadcast text-purple-400 text-xl"></i>
+        </div>
+    </div>
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Inbound Queue (File d'attente) -->
     <div class="lg:col-span-2 space-y-6">
         <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
             <div class="p-4 border-b border-dark-100 flex items-center justify-between">
                 <h3 class="font-semibold text-white">
-                    <i class="fas fa-plane-arrival mr-2 text-green-400"></i>
-                    Arrivées Prévues
+                    <i class="fas fa-plane-arrival mr-2 text-yellow-400"></i>
+                    File d'Attente (Inbound Queue)
                 </h3>
-                <span class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">
-                    {{ inbound|length }} vols
-                </span>
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-sm">
+                        {{ inbound|length }} vols
+                    </span>
+                    <button onclick="refreshQueue()" class="p-2 text-gray-400 hover:text-white transition-colors" data-testid="btn-refresh-queue">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-dark-300">
                         <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Seq</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Vol</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Origine</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Destination</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">ETA</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Statut</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-dark-100">
+                    <tbody class="divide-y divide-dark-100" id="inbound-table">
                         {% for flight in inbound %}
-                        <tr class="hover:bg-dark-300/50 transition-colors">
+                        <tr class="hover:bg-dark-300/50 transition-colors" data-testid="inbound-row-{{ flight.id }}">
+                            <td class="px-4 py-3 text-gray-400 font-mono">{{ loop.index }}</td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                        <i class="fas fa-plane-arrival text-green-400 text-sm"></i>
+                                    <div class="w-8 h-8 rounded-full {% if flight.flight_status == 'approaching' %}bg-yellow-500/20{% else %}bg-green-500/20{% endif %} flex items-center justify-center">
+                                        <i class="fas fa-plane-arrival {% if flight.flight_status == 'approaching' %}text-yellow-400{% else %}text-green-400{% endif %} text-sm"></i>
                                     </div>
                                     <div>
                                         <p class="font-medium text-white">{{ flight.callsign }}</p>
-                                        <p class="text-xs text-gray-400">{{ flight.flight_number or '-' }}</p>
+                                        <p class="text-xs text-gray-400">{{ flight.aircraft.operator if flight.aircraft else '-' }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-white">{{ flight.departure_icao or '???' }}</td>
-                            <td class="px-4 py-3 text-white">{{ flight.arrival_icao or '???' }}</td>
-                            <td class="px-4 py-3 text-white">
+                            <td class="px-4 py-3">
+                                <span class="text-white">{{ flight.departure_icao or '???' }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="font-medium text-primary-400">{{ flight.arrival_icao or '???' }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if flight.is_domestic %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400">
+                                    Domestique
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-500/20 text-purple-400">
+                                    International
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-white font-mono">
                                 {{ flight.scheduled_arrival.strftime('%H:%M') if flight.scheduled_arrival else '--:--' }}
                             </td>
                             <td class="px-4 py-3">
@@ -56,17 +176,29 @@
                                 </span>
                                 {% else %}
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full status-dot"></span>
+                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
                                     En route
                                 </span>
                                 {% endif %}
                             </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="trackFlight('{{ flight.id }}')" class="p-1.5 text-gray-400 hover:text-white rounded transition-colors" title="Suivre" data-testid="btn-track-{{ flight.id }}">
+                                        <i class="fas fa-crosshairs"></i>
+                                    </button>
+                                    {% if flight.flight_status == 'approaching' %}
+                                    <button onclick="confirmLanding('{{ flight.id }}')" class="p-1.5 text-green-400 hover:text-green-300 rounded transition-colors" title="Confirmer atterrissage" data-testid="btn-landing-{{ flight.id }}">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-                                <i class="fas fa-plane-slash text-3xl mb-2 opacity-50"></i>
-                                <p>Aucune arrivée prévue</p>
+                            <td colspan="8" class="px-4 py-8 text-center text-gray-400">
+                                <i class="fas fa-inbox text-3xl mb-2 opacity-50"></i>
+                                <p>File d'attente vide - Aucune arrivée prévue</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -75,11 +207,12 @@
             </div>
         </div>
         
+        <!-- Aircraft on Ground with Parking Duration -->
         <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
             <div class="p-4 border-b border-dark-100 flex items-center justify-between">
                 <h3 class="font-semibold text-white">
                     <i class="fas fa-parking mr-2 text-blue-400"></i>
-                    Aéronefs au Sol
+                    Aéronefs au Sol (Parking & Stationnement)
                 </h3>
                 <span class="px-2.5 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
                     {{ on_ground|length }} aéronefs
@@ -92,13 +225,15 @@
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Vol</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Aéroport</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Arrivée</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Stationnement</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Touchdown</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Durée Parking</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Facturable</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-100">
                         {% for flight in on_ground %}
-                        <tr class="hover:bg-dark-300/50 transition-colors">
+                        <tr class="hover:bg-dark-300/50 transition-colors" data-testid="ground-row-{{ flight.id }}">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
@@ -106,24 +241,41 @@
                                     </div>
                                     <div>
                                         <p class="font-medium text-white">{{ flight.callsign }}</p>
-                                        <p class="text-xs text-gray-400">{{ flight.flight_number or '-' }}</p>
+                                        <p class="text-xs text-gray-400">{{ flight.aircraft.registration if flight.aircraft else '-' }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-white">{{ flight.arrival_icao or '???' }}</td>
-                            <td class="px-4 py-3 text-white">
-                                {{ flight.actual_arrival.strftime('%H:%M') if flight.actual_arrival else '--:--' }}
+                            <td class="px-4 py-3">
+                                <span class="font-medium text-primary-400">{{ flight.arrival_icao or '???' }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-white font-mono">
+                                {{ flight.actual_arrival.strftime('%H:%M:%S') if flight.actual_arrival else '--:--:--' }}
                             </td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
-                                    <i class="fas fa-clock"></i>
-                                    En stationnement
+                                <span class="parking-timer text-blue-400" id="parking-{{ flight.id }}" 
+                                      data-arrival="{{ flight.actual_arrival.isoformat() if flight.actual_arrival else '' }}">
+                                    Calcul...
                                 </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="billable-badge text-yellow-400" id="billable-{{ flight.id }}">
+                                    -
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <button onclick="recordDeparture('{{ flight.id }}')" class="p-1.5 text-green-400 hover:text-green-300 rounded transition-colors" title="Enregistrer départ" data-testid="btn-departure-{{ flight.id }}">
+                                        <i class="fas fa-plane-departure"></i>
+                                    </button>
+                                    <button onclick="generateParkingInvoice('{{ flight.id }}')" class="p-1.5 text-yellow-400 hover:text-yellow-300 rounded transition-colors" title="Facturer stationnement" data-testid="btn-invoice-{{ flight.id }}">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+                            <td colspan="6" class="px-4 py-8 text-center text-gray-400">
                                 <i class="fas fa-parking text-3xl mb-2 opacity-50"></i>
                                 <p>Aucun aéronef au sol</p>
                             </td>
@@ -135,16 +287,69 @@
         </div>
     </div>
     
+    <!-- Right Sidebar -->
     <div class="space-y-6">
+        <!-- Landing Cycle Diagram -->
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
+            <h4 class="font-semibold text-white mb-4">
+                <i class="fas fa-stream mr-2 text-primary-400"></i>
+                Cycle Atterrissage
+            </h4>
+            
+            <div class="space-y-4">
+                <div class="cycle-step text-yellow-400">
+                    <div class="cycle-icon bg-yellow-500/20">
+                        <i class="fas fa-plane-arrival"></i>
+                    </div>
+                    <div class="ml-2">
+                        <p class="font-medium">1. Approche</p>
+                        <p class="text-xs text-gray-400">Descente vers l'aéroport</p>
+                    </div>
+                </div>
+                
+                <div class="cycle-step text-green-400">
+                    <div class="cycle-icon bg-green-500/20">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div class="ml-2">
+                        <p class="font-medium">2. Touchdown</p>
+                        <p class="text-xs text-gray-400">Contact piste</p>
+                    </div>
+                </div>
+                
+                <div class="cycle-step text-blue-400">
+                    <div class="cycle-icon bg-blue-500/20">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="ml-2">
+                        <p class="font-medium">3. Taxi</p>
+                        <p class="text-xs text-gray-400">Roulage vers parking</p>
+                    </div>
+                </div>
+                
+                <div class="cycle-step text-purple-400">
+                    <div class="cycle-icon bg-purple-500/20">
+                        <i class="fas fa-parking"></i>
+                    </div>
+                    <div class="ml-2">
+                        <p class="font-medium">4. Parking</p>
+                        <p class="text-xs text-gray-400">Stationnement (1h gratuit)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Airports Status -->
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
             <h4 class="font-semibold text-white mb-4">
                 <i class="fas fa-tower-broadcast mr-2 text-primary-400"></i>
                 Aéroports RDC
             </h4>
             
-            <div class="space-y-3">
+            <div class="space-y-3 max-h-80 overflow-y-auto">
                 {% for airport in airports %}
-                <div class="p-3 bg-dark-300 rounded-lg flex items-center justify-between">
+                <div class="p-3 bg-dark-300 rounded-lg flex items-center justify-between hover:bg-dark-200 transition-colors cursor-pointer" 
+                     onclick="selectAirport('{{ airport.icao_code }}')" data-testid="airport-{{ airport.icao_code }}">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
                             <span class="text-primary-400 font-bold text-sm">{{ airport.icao_code[:2] }}</span>
@@ -154,33 +359,150 @@
                             <p class="text-xs text-gray-400">{{ airport.city }}</p>
                         </div>
                     </div>
-                    <span class="w-2.5 h-2.5 rounded-full {% if airport.status == 'open' %}bg-green-400{% else %}bg-red-400{% endif %}"></span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">{{ airport.name[:15] }}...</span>
+                        <span class="w-2.5 h-2.5 rounded-full {% if airport.status == 'open' %}bg-green-400{% else %}bg-red-400{% endif %}"></span>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
         
+        <!-- Daily Summary -->
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
             <h4 class="font-semibold text-white mb-4">
-                <i class="fas fa-chart-pie mr-2 text-primary-400"></i>
+                <i class="fas fa-chart-bar mr-2 text-primary-400"></i>
                 Résumé du Jour
             </h4>
             
             <div class="space-y-4">
                 <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Arrivées</span>
-                    <span class="font-medium text-white">{{ inbound|length }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Au sol</span>
+                    <span class="text-gray-400">Atterrissages</span>
                     <span class="font-medium text-white">{{ on_ground|length }}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Départs prévus</span>
-                    <span class="font-medium text-white">0</span>
+                    <span class="text-gray-400">En approche</span>
+                    <span class="font-medium text-yellow-400">{{ inbound|selectattr('flight_status', 'equalto', 'approaching')|list|length }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Départs aujourd'hui</span>
+                    <span class="font-medium text-green-400">0</span>
+                </div>
+                <div class="h-px bg-dark-100 my-2"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Heures stationnement</span>
+                    <span class="font-medium text-blue-400" id="total-parking-hours">0h</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const FREE_PARKING_HOURS = 1;
+    const PARKING_RATE_PER_HOUR = 25;
+    
+    function updateParkingTimers() {
+        document.querySelectorAll('.parking-timer').forEach(el => {
+            const arrival = el.dataset.arrival;
+            if (!arrival) {
+                el.textContent = '--:--:--';
+                return;
+            }
+            
+            const arrivalTime = new Date(arrival);
+            const now = new Date();
+            const diffMs = now - arrivalTime;
+            const diffSecs = Math.floor(diffMs / 1000);
+            
+            const hours = Math.floor(diffSecs / 3600);
+            const mins = Math.floor((diffSecs % 3600) / 60);
+            const secs = diffSecs % 60;
+            
+            el.textContent = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            
+            const flightId = el.id.replace('parking-', '');
+            const billableEl = document.getElementById(`billable-${flightId}`);
+            
+            if (hours >= FREE_PARKING_HOURS) {
+                const billableHours = hours - FREE_PARKING_HOURS + (mins > 0 || secs > 0 ? 1 : 0);
+                const amount = billableHours * PARKING_RATE_PER_HOUR;
+                billableEl.innerHTML = `<span class="text-yellow-400">$${amount.toFixed(2)}</span>`;
+                el.classList.add('text-yellow-400');
+                el.classList.remove('text-blue-400');
+            } else {
+                const remaining = (FREE_PARKING_HOURS * 3600) - diffSecs;
+                const remMins = Math.floor(remaining / 60);
+                billableEl.innerHTML = `<span class="text-green-400">Gratuit (${remMins}m restant)</span>`;
+                el.classList.add('text-blue-400');
+                el.classList.remove('text-yellow-400');
+            }
+        });
+        
+        let totalHours = 0;
+        document.querySelectorAll('.parking-timer').forEach(el => {
+            const text = el.textContent;
+            const match = text.match(/(\d+):/);
+            if (match) totalHours += parseInt(match[1]);
+        });
+        document.getElementById('total-parking-hours').textContent = `${totalHours}h`;
+    }
+    
+    function refreshQueue() {
+        window.location.reload();
+    }
+    
+    function trackFlight(flightId) {
+        window.location.href = `/radar?focus=${flightId}`;
+    }
+    
+    function confirmLanding(flightId) {
+        if (!confirm('Confirmer l\'atterrissage de ce vol?')) return;
+        
+        fetch(`/api/flights/${flightId}/land`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + (data.error || 'Impossible de confirmer'));
+            }
+        })
+        .catch(e => console.error('Error:', e));
+    }
+    
+    function recordDeparture(flightId) {
+        if (!confirm('Enregistrer le départ de cet aéronef?')) return;
+        
+        fetch(`/api/flights/${flightId}/depart`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + (data.error || 'Impossible d\'enregistrer'));
+            }
+        })
+        .catch(e => console.error('Error:', e));
+    }
+    
+    function generateParkingInvoice(flightId) {
+        window.location.href = `/invoices/create?landing_id=${flightId}`;
+    }
+    
+    function selectAirport(icaoCode) {
+        window.location.href = `/radar/terminal?airport=${icaoCode}`;
+    }
+    
+    setInterval(updateParkingTimers, 1000);
+    document.addEventListener('DOMContentLoaded', updateParkingTimers);
+</script>
 {% endblock %}

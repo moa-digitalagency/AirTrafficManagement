@@ -117,3 +117,96 @@ def api_airport_weather(icao_code):
         'weather': weather,
         'metar': metar
     })
+
+
+@radar_bp.route('/api/overflights/active')
+@login_required
+def api_active_overflights():
+    """Get active overflights with trajectory data"""
+    active = Overflight.query.filter_by(status='active').all()
+    
+    result = []
+    for ovf in active:
+        flight = ovf.flight
+        trajectory = []
+        
+        if flight:
+            positions = FlightPosition.query.filter_by(
+                flight_id=flight.id
+            ).order_by(FlightPosition.timestamp.desc()).limit(50).all()
+            
+            trajectory = [
+                {'lat': p.latitude, 'lon': p.longitude, 'alt': p.altitude or 0}
+                for p in reversed(positions)
+            ]
+        
+        result.append({
+            'id': ovf.id,
+            'session_id': ovf.session_id,
+            'entry_lat': ovf.entry_lat,
+            'entry_lon': ovf.entry_lon,
+            'entry_alt': ovf.entry_alt or 0,
+            'entry_time': ovf.entry_time.isoformat() if ovf.entry_time else None,
+            'exit_lat': ovf.exit_lat,
+            'exit_lon': ovf.exit_lon,
+            'exit_alt': ovf.exit_alt or 0,
+            'current_lat': trajectory[-1]['lat'] if trajectory else ovf.entry_lat,
+            'current_lon': trajectory[-1]['lon'] if trajectory else ovf.entry_lon,
+            'trajectory': trajectory,
+            'flight': {
+                'callsign': flight.callsign if flight else None,
+                'departure': flight.departure_icao if flight else None,
+                'arrival': flight.arrival_icao if flight else None
+            } if flight else None
+        })
+    
+    return jsonify(result)
+
+
+@radar_bp.route('/api/overflights/<int:overflight_id>/trajectory')
+@login_required
+def api_overflight_trajectory(overflight_id):
+    """Get trajectory data for a specific overflight"""
+    ovf = Overflight.query.get_or_404(overflight_id)
+    
+    trajectory = []
+    
+    if ovf.flight_id:
+        positions = FlightPosition.query.filter(
+            FlightPosition.flight_id == ovf.flight_id,
+            FlightPosition.is_in_rdc == True
+        ).order_by(FlightPosition.timestamp).all()
+        
+        trajectory = [
+            {'lat': p.latitude, 'lon': p.longitude, 'alt': p.altitude or 0, 'time': p.timestamp.isoformat() if p.timestamp else None}
+            for p in positions
+        ]
+    
+    if ovf.trajectory_geojson:
+        import json
+        try:
+            geojson = json.loads(ovf.trajectory_geojson)
+            if geojson.get('coordinates'):
+                trajectory = [
+                    {'lat': coord[1], 'lon': coord[0], 'alt': coord[2] if len(coord) > 2 else 0}
+                    for coord in geojson['coordinates']
+                ]
+        except:
+            pass
+    
+    return jsonify({
+        'id': ovf.id,
+        'session_id': ovf.session_id,
+        'entry_lat': ovf.entry_lat,
+        'entry_lon': ovf.entry_lon,
+        'entry_alt': ovf.entry_alt or 0,
+        'entry_time': ovf.entry_time.isoformat() if ovf.entry_time else None,
+        'exit_lat': ovf.exit_lat,
+        'exit_lon': ovf.exit_lon,
+        'exit_alt': ovf.exit_alt or 0,
+        'exit_time': ovf.exit_time.isoformat() if ovf.exit_time else None,
+        'duration_minutes': ovf.duration_minutes,
+        'distance_km': ovf.distance_km,
+        'trajectory': trajectory,
+        'status': ovf.status
+    })

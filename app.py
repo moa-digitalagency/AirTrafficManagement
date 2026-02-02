@@ -53,6 +53,7 @@ def create_app(config_class=Config):
     from routes.invoices import invoices_bp
     from routes.admin import admin_bp
     from routes.api import api_bp
+    from routes.analytics import analytics_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
@@ -61,6 +62,7 @@ def create_app(config_class=Config):
     app.register_blueprint(invoices_bp, url_prefix='/invoices')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(analytics_bp, url_prefix='/analytics')
     
     @app.route('/')
     def index():
