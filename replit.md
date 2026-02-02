@@ -35,7 +35,8 @@ ATM-RDC is a comprehensive web-based air traffic management system developed for
 ├── scripts/          # Utility scripts
 ├── security/         # Security utilities
 ├── services/         # Business logic services
-│   ├── flight_tracker.py    # Real-time flight tracking
+│   ├── api_client.py       # External API integrations
+│   ├── flight_tracker.py   # Real-time flight tracking
 │   └── invoice_generator.py # PDF invoice generation
 ├── statics/          # Static files (CSS, JS, images)
 ├── tasks/            # Celery async tasks
@@ -81,13 +82,38 @@ python init_db.py
 
 Configure these in your `.env` file or Replit Secrets:
 
+### Core Configuration
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `DATABASE_URL` | PostgreSQL connection string | Yes (auto-configured) |
 | `SESSION_SECRET` | Flask session secret key | Yes |
-| `REDIS_URL` | Redis connection for Celery | Optional |
-| `FLIGHT_API_KEY` | External flight data API key | Optional |
-| `FLIGHT_API_URL` | External flight data API URL | Optional |
+| `REDIS_URL` | Redis connection for Celery | Yes (for async) |
+
+### External Flight Data APIs
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `AVIATIONSTACK_API_KEY` | AviationStack API key (primary flight data source) | Yes* |
+| `AVIATIONSTACK_API_URL` | AviationStack API URL (default: http://api.aviationstack.com/v1) | No |
+| `ADSBEXCHANGE_API_KEY` | ADSBexchange API key (fallback flight data source) | No |
+| `ADSBEXCHANGE_API_URL` | ADSBexchange API URL | No |
+
+### Weather Data APIs
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OPENWEATHERMAP_API_KEY` | OpenWeatherMap API key (weather overlay on radar) | Yes* |
+| `OPENWEATHERMAP_API_URL` | OpenWeatherMap API URL (default: https://api.openweathermap.org/data/2.5) | No |
+| `AVIATIONWEATHER_API_URL` | Aviation Weather API URL for METAR/TAF data | No |
+
+### Email Configuration (Invoice Sending)
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `MAIL_SERVER` | SMTP server (default: smtp.gmail.com) | No |
+| `MAIL_PORT` | SMTP port (default: 587) | No |
+| `MAIL_USERNAME` | SMTP username | No |
+| `MAIL_PASSWORD` | SMTP password | No |
+| `MAIL_DEFAULT_SENDER` | Default sender email | No |
+
+*Required for real-time data. System falls back to simulation if not configured.
 
 ## Default User Accounts
 
@@ -105,28 +131,41 @@ Configure these in your `.env` file or Replit Secrets:
 
 ### 1. Live Radar (`/radar`)
 - Real-time aircraft tracking on Leaflet.js map
-- RDC airspace boundary visualization
-- Flight status filtering and search
-- WebSocket updates for live positions
+- RDC airspace boundary visualization with geofencing
+- Dynamic aircraft icons (size by altitude, color by status)
+- Weather overlay layers (clouds, precipitation, pressure, wind)
+- Advanced filters (altitude range, operator, status, in-RDC)
+- Data tags showing callsign, flight level, speed
+- Multi-layer control (basemap selection: dark/satellite/streets)
+- Airport weather on click (METAR/current conditions)
 
 ### 2. Overflight Tracking (`/radar/overflights`)
 - Automatic detection of aircraft entering RDC airspace
-- Geofencing using Shapely/PostGIS for "Point in Polygon" calculations
+- Geofencing using Shapely for "Point in Polygon" calculations
 - Entry/exit point recording with timestamps
 - Distance and duration calculation
+- Trajectory breadcrumb trail
 
 ### 3. ATM Terminal (`/radar/terminal`)
-- Inbound flight monitoring
-- Aircraft on ground tracking
-- Airport status overview
+- Inbound flight queue management
+- Landing cycle tracking (Approach → Touchdown → Taxi → Parking)
+- Aircraft on ground monitoring
+- Parking duration calculation
 
 ### 4. Billing System (`/invoices`)
 - Automated invoice generation from overflights and landings
-- PDF export with ReportLab
-- Configurable tariffs
+- PDF export with RVA header and minimap
+- Configurable tariffs (per km, per tonne, parking, night surcharge)
 - Payment status tracking
+- Email notification capability
 
-### 5. Administration (`/admin`)
+### 5. Analytics/BI (`/analytics`)
+- Dynamic dashboards with charts
+- Traffic statistics (daily, weekly, monthly)
+- Revenue analysis by airline/route
+- Export capabilities (CSV, JSON, PDF)
+
+### 6. Administration (`/admin`)
 - User management with RBAC
 - Airline and aircraft database
 - Airport configuration
@@ -150,15 +189,38 @@ Configure these in your `.env` file or Replit Secrets:
 - `GET /auth/logout` - User logout
 
 ### Radar API
-- `GET /radar/api/flights` - Active flights
+- `GET /radar/api/flights` - Active flights (uses AviationStack → ADSBexchange fallback)
 - `GET /radar/api/boundary` - RDC boundary GeoJSON
 - `GET /radar/api/alerts` - Active alerts
 - `GET /radar/api/airports` - Domestic airports
+- `GET /radar/api/weather/tiles` - Weather tile layer URLs
+- `GET /radar/api/weather/airport/<icao>` - Airport weather and METAR
 
 ### Flights API
 - `GET /api/flights` - List flights
 - `GET /api/flights/<id>` - Flight details
 - `GET /api/overflights` - Overflight sessions
+
+## External API Integration
+
+### Flight Data (Primary: AviationStack)
+The system uses AviationStack API as primary source for real-time flight positions:
+- Position data: latitude, longitude, altitude, heading, speed
+- Aircraft info: registration, type, operator
+- Route info: departure/arrival ICAO codes
+
+### Flight Data (Fallback: ADSBexchange)
+If AviationStack fails or is not configured, the system falls back to ADSBexchange for ADS-B data.
+
+### Weather Data (OpenWeatherMap)
+Weather overlay on radar map:
+- Cloud cover layer
+- Precipitation layer
+- Pressure and wind layers
+- Current conditions for airports
+
+### Aviation Weather (aviationweather.gov)
+METAR/TAF data for airports without API key requirement.
 
 ## Celery Tasks
 
@@ -172,7 +234,26 @@ Configure these in your `.env` file or Replit Secrets:
 - `generate_single_invoice` - Generate specific invoice
 - `send_invoice_notification` - Send invoice notification
 
+## Tarification (Configurable in Admin)
+
+| Charge Type | Default Rate |
+|-------------|--------------|
+| Overflight per km | $0.85 |
+| Tonnage per tonne | $2.50 |
+| Landing base fee | $150.00 |
+| Landing per tonne | $3.00 |
+| Parking per hour | $25.00 (1st hour free) |
+| Night surcharge | 25% (18:00-06:00) |
+| VAT | 16% |
+
 ## Recent Changes
+
+- **2026-02-02**: External API Integration
+  - Added services/api_client.py for AviationStack, ADSBexchange, OpenWeatherMap
+  - Enhanced radar module with weather overlays and advanced filters
+  - Dynamic aircraft icons based on altitude and status
+  - Airport weather display (METAR/current conditions)
+  - Fallback mechanism: AviationStack → ADSBexchange → Simulation
 
 - **2026-02-02**: Initial system deployment
   - Full Python/Flask backend implementation

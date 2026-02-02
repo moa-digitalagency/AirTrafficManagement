@@ -67,12 +67,76 @@ def is_point_in_rdc(lat, lon):
     return polygon.contains(point)
 
 
-def get_active_flights():
+def get_active_flights(use_external_api=True):
+    """
+    Get active flights from external API (AviationStack/ADSBexchange) or database.
+    
+    Strategy:
+    1. Try external API first (if configured)
+    2. Fallback to database + simulation if API fails or not configured
+    
+    Args:
+        use_external_api: Whether to attempt external API fetch first
+        
+    Returns:
+        List of flight dictionaries with position data
+    """
+    result = []
+    
+    # Try external API first (AviationStack → ADSBexchange fallback)
+    if use_external_api:
+        try:
+            external_flights = fetch_external_flight_data()
+            if external_flights:
+                for flight_data in external_flights:
+                    lat = flight_data.get('latitude')
+                    lon = flight_data.get('longitude')
+                    in_rdc = is_point_in_rdc(lat, lon) if lat and lon else False
+                    
+                    alt = flight_data.get('altitude') or 0
+                    status = 'on_ground' if flight_data.get('on_ground') else 'in_flight'
+                    if alt > 0 and alt < 10000 and not flight_data.get('on_ground'):
+                        status = 'approaching'
+                    
+                    status_color = 'green'
+                    if status == 'approaching':
+                        status_color = 'yellow'
+                    elif status == 'on_ground':
+                        status_color = 'blue'
+                    
+                    result.append({
+                        'id': hash(flight_data.get('icao24', flight_data.get('callsign', ''))),
+                        'callsign': flight_data.get('callsign') or flight_data.get('icao24', 'UNKNOWN'),
+                        'flight_number': flight_data.get('callsign'),
+                        'latitude': lat,
+                        'longitude': lon,
+                        'altitude': alt,
+                        'heading': flight_data.get('heading') or 0,
+                        'ground_speed': flight_data.get('ground_speed') or 0,
+                        'vertical_speed': flight_data.get('vertical_speed') or 0,
+                        'status': status,
+                        'status_color': status_color,
+                        'in_rdc': in_rdc,
+                        'departure': flight_data.get('departure_icao'),
+                        'arrival': flight_data.get('arrival_icao'),
+                        'squawk': flight_data.get('squawk'),
+                        'aircraft': {
+                            'registration': flight_data.get('registration'),
+                            'model': flight_data.get('aircraft_type'),
+                            'type': flight_data.get('aircraft_type'),
+                            'operator': flight_data.get('airline_iata')
+                        }
+                    })
+                
+                if result:
+                    return result
+        except Exception as e:
+            print(f"[FlightTracker] External API error, falling back to simulation: {e}")
+    
+    # Fallback: Use database flights with simulation
     flights = Flight.query.filter(
         Flight.flight_status.in_(['in_flight', 'approaching', 'on_ground'])
     ).all()
-    
-    result = []
     
     for flight in flights:
         aircraft = flight.aircraft
@@ -104,11 +168,13 @@ def get_active_flights():
             'altitude': alt,
             'heading': heading,
             'ground_speed': speed,
+            'vertical_speed': 0,
             'status': flight.flight_status,
             'status_color': status_color,
             'in_rdc': in_rdc,
             'departure': flight.departure_icao,
             'arrival': flight.arrival_icao,
+            'squawk': None,
             'aircraft': {
                 'registration': aircraft.registration if aircraft else None,
                 'model': aircraft.model if aircraft else None,
