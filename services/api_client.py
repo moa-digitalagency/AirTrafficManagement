@@ -121,6 +121,7 @@ class AviationStackClient:
                 airline = flight_data.get('airline') or {}
                 flight_info = flight_data.get('flight') or {}
                 aircraft = flight_data.get('aircraft') or {}
+                codeshared = flight_info.get('codeshared') or {}
                 
                 flights.append({
                     'icao24': aircraft.get('icao24'),
@@ -143,17 +144,26 @@ class AviationStackClient:
                     'departure_icao': departure.get('icao'),
                     'departure_iata': departure.get('iata'),
                     'departure_airport': departure.get('airport'),
+                    'departure_terminal': departure.get('terminal'),
+                    'departure_gate': departure.get('gate'),
+                    'departure_timezone': departure.get('timezone'),
                     'departure_scheduled': departure.get('scheduled'),
                     'departure_actual': departure.get('actual'),
                     'departure_delay': departure.get('delay'),
                     'arrival_icao': arrival.get('icao'),
                     'arrival_iata': arrival.get('iata'),
                     'arrival_airport': arrival.get('airport'),
+                    'arrival_terminal': arrival.get('terminal'),
+                    'arrival_gate': arrival.get('gate'),
+                    'arrival_baggage': arrival.get('baggage'),
+                    'arrival_timezone': arrival.get('timezone'),
                     'arrival_scheduled': arrival.get('scheduled'),
                     'arrival_estimated': arrival.get('estimated'),
                     'airline_name': airline.get('name'),
                     'airline_iata': airline.get('iata'),
                     'airline_icao': airline.get('icao'),
+                    'codeshared_airline_name': codeshared.get('airline_name'),
+                    'codeshared_flight_number': codeshared.get('flight_number'),
                     'live_updated': live.get('updated'),
                     'timestamp': datetime.utcnow().isoformat()
                 })
