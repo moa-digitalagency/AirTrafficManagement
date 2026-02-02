@@ -5,7 +5,7 @@ Provides dashboards, charts, and data export capabilities
 from flask import Blueprint, render_template, jsonify, request, Response
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, select, union_all, literal
 import json
 import csv
 import io
@@ -155,36 +155,41 @@ def api_revenue_by_type():
 @login_required
 def api_airports_traffic():
     """Get traffic by airport"""
-    arrivals = db.session.query(
+    q_arrivals = select(
         Flight.arrival_icao.label('airport'),
-        func.count(Flight.id).label('count')
-    ).filter(Flight.arrival_icao.isnot(None)).group_by(Flight.arrival_icao).all()
-    
-    departures = db.session.query(
+        func.count(Flight.id).label('arrivals'),
+        literal(0).label('departures')
+    ).where(Flight.arrival_icao.isnot(None)).group_by(Flight.arrival_icao)
+
+    q_departures = select(
         Flight.departure_icao.label('airport'),
-        func.count(Flight.id).label('count')
-    ).filter(Flight.departure_icao.isnot(None)).group_by(Flight.departure_icao).all()
-    
-    traffic = {}
-    for row in arrivals:
-        traffic[row.airport] = {'arrivals': row.count, 'departures': 0}
-    for row in departures:
-        if row.airport in traffic:
-            traffic[row.airport]['departures'] = row.count
-        else:
-            traffic[row.airport] = {'arrivals': 0, 'departures': row.count}
-    
+        literal(0).label('arrivals'),
+        func.count(Flight.id).label('departures')
+    ).where(Flight.departure_icao.isnot(None)).group_by(Flight.departure_icao)
+
+    union_q = union_all(q_arrivals, q_departures).subquery()
+
+    stmt = select(
+        union_q.c.airport,
+        func.sum(union_q.c.arrivals).label('arrivals'),
+        func.sum(union_q.c.departures).label('departures'),
+        (func.sum(union_q.c.arrivals) + func.sum(union_q.c.departures)).label('total')
+    ).group_by(union_q.c.airport).order_by(
+        (func.sum(union_q.c.arrivals) + func.sum(union_q.c.departures)).desc()
+    ).limit(15)
+
+    result = db.session.execute(stmt).all()
+
     data = [
         {
-            'airport': code,
-            'arrivals': stats['arrivals'],
-            'departures': stats['departures'],
-            'total': stats['arrivals'] + stats['departures']
+            'airport': row.airport,
+            'arrivals': int(row.arrivals or 0),
+            'departures': int(row.departures or 0),
+            'total': int(row.total or 0)
         }
-        for code, stats in traffic.items()
+        for row in result
     ]
-    data.sort(key=lambda x: x['total'], reverse=True)
-    return jsonify(data[:15])
+    return jsonify(data)
 
 
 @analytics_bp.route('/export/<format_type>')
