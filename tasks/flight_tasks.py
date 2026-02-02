@@ -75,6 +75,14 @@ def check_airspace_entries(self):
                 Flight.flight_status.in_(['in_flight', 'approaching'])
             ).all()
             
+            # Optimization: Pre-fetch active overflights to avoid N+1 queries
+            flight_ids = [f.id for f in active_flights]
+            overflights = Overflight.query.filter(
+                Overflight.flight_id.in_(flight_ids),
+                Overflight.status == 'active'
+            ).all()
+            overflight_map = {ovf.flight_id: ovf for ovf in overflights}
+
             entries = []
             exits = []
             
@@ -87,10 +95,7 @@ def check_airspace_entries(self):
                     flight.current_longitude
                 )
                 
-                existing_overflight = Overflight.query.filter_by(
-                    flight_id=flight.id,
-                    status='active'
-                ).first()
+                existing_overflight = overflight_map.get(flight.id)
                 
                 if is_in_rdc and not existing_overflight:
                     from uuid import uuid4
