@@ -7,6 +7,7 @@ from datetime import datetime
 import random
 import math
 import os
+from functools import lru_cache
 
 from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
@@ -357,11 +358,17 @@ def check_overflight_exit(flight_id, lat, lon, alt):
     return overflight
 
 
+@lru_cache(maxsize=32)
+def _get_tariff_config(code):
+    tariff = TariffConfig.query.filter_by(code=code).first()
+    return tariff.value if tariff else None
+
+
 def get_tariff_value(code, default=0.0):
     """Get tariff value from DB or return default"""
     try:
-        tariff = TariffConfig.query.filter_by(code=code).first()
-        return tariff.value if tariff else default
+        val = _get_tariff_config(code)
+        return val if val is not None else default
     except:
         return default
 
