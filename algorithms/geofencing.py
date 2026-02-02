@@ -4,6 +4,7 @@ Air Traffic Management - RDC
 """
 
 from shapely.geometry import Point, Polygon, LineString
+from shapely.prepared import prep
 from shapely.ops import nearest_points
 import math
 
@@ -22,10 +23,11 @@ class RDCGeofence:
             (13.0, -6.5), (12.2, -5.9)
         ]
         self.polygon = Polygon(self.boundary_coords)
+        self.prepared_polygon = prep(self.polygon)
     
     def contains(self, lon, lat):
         point = Point(lon, lat)
-        return self.polygon.contains(point)
+        return self.prepared_polygon.contains(point)
     
     def distance_to_boundary(self, lon, lat):
         point = Point(lon, lat)
