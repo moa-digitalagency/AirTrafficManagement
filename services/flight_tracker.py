@@ -119,6 +119,23 @@ def get_active_flights(use_external_api=True):
                         'in_rdc': in_rdc,
                         'departure': flight_data.get('departure_icao'),
                         'arrival': flight_data.get('arrival_icao'),
+                        'departure_details': {
+                            'icao': flight_data.get('departure_icao'),
+                            'terminal': flight_data.get('departure_terminal'),
+                            'gate': flight_data.get('departure_gate'),
+                            'timezone': flight_data.get('departure_timezone')
+                        },
+                        'arrival_details': {
+                            'icao': flight_data.get('arrival_icao'),
+                            'terminal': flight_data.get('arrival_terminal'),
+                            'gate': flight_data.get('arrival_gate'),
+                            'baggage': flight_data.get('arrival_baggage'),
+                            'timezone': flight_data.get('arrival_timezone')
+                        },
+                        'codeshare': {
+                            'airline': flight_data.get('codeshared_airline_name'),
+                            'flight_number': flight_data.get('codeshared_flight_number')
+                        },
                         'squawk': flight_data.get('squawk'),
                         'aircraft': {
                             'registration': flight_data.get('registration'),
@@ -174,6 +191,23 @@ def get_active_flights(use_external_api=True):
             'in_rdc': in_rdc,
             'departure': flight.departure_icao,
             'arrival': flight.arrival_icao,
+            'departure_details': {
+                'icao': flight.departure_icao,
+                'terminal': flight.departure_terminal,
+                'gate': flight.departure_gate,
+                'timezone': flight.departure_timezone
+            },
+            'arrival_details': {
+                'icao': flight.arrival_icao,
+                'terminal': flight.arrival_terminal,
+                'gate': flight.arrival_gate,
+                'baggage': flight.arrival_baggage,
+                'timezone': flight.arrival_timezone
+            },
+            'codeshare': {
+                'airline': flight.codeshared_airline_name,
+                'flight_number': flight.codeshared_flight_number
+            },
             'squawk': None,
             'aircraft': {
                 'registration': aircraft.registration if aircraft else None,
