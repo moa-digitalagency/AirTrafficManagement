@@ -83,7 +83,7 @@ def get_landings():
     if airport:
         query = query.filter_by(airport_icao=airport)
     
-    landings = query.order_by(Landing.landing_time.desc()).limit(limit).all()
+    landings = query.order_by(Landing.touchdown_time.desc()).limit(limit).all()
     return jsonify([l.to_dict() for l in landings])
 
 
@@ -98,12 +98,12 @@ def get_stats_summary():
         'today': {
             'flights': Flight.query.filter(Flight.scheduled_departure >= start_of_day).count(),
             'overflights': Overflight.query.filter(Overflight.entry_time >= start_of_day).count(),
-            'landings': Landing.query.filter(Landing.landing_time >= start_of_day).count(),
+            'landings': Landing.query.filter(Landing.touchdown_time >= start_of_day).count(),
         },
         'month': {
             'flights': Flight.query.filter(Flight.scheduled_departure >= start_of_month).count(),
             'overflights': Overflight.query.filter(Overflight.entry_time >= start_of_month).count(),
-            'landings': Landing.query.filter(Landing.landing_time >= start_of_month).count(),
+            'landings': Landing.query.filter(Landing.touchdown_time >= start_of_month).count(),
             'revenue': db.session.query(func.sum(Invoice.total_amount)).filter(
                 Invoice.created_at >= start_of_month,
                 Invoice.status == 'paid'
@@ -194,9 +194,9 @@ def export_landings():
     query = Landing.query
     
     if start_date:
-        query = query.filter(Landing.landing_time >= start_date)
+        query = query.filter(Landing.touchdown_time >= start_date)
     if end_date:
-        query = query.filter(Landing.landing_time <= end_date + ' 23:59:59')
+        query = query.filter(Landing.touchdown_time <= end_date + ' 23:59:59')
     if airport:
         query = query.filter_by(airport_icao=airport)
     

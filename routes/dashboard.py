@@ -18,7 +18,7 @@ def index():
         'active_flights': Flight.query.filter(Flight.flight_status.in_(['in_flight', 'approaching'])).count(),
         'flights_today': Flight.query.filter(Flight.scheduled_departure >= start_of_day).count(),
         'overflights_today': Overflight.query.filter(Overflight.entry_time >= start_of_day).count(),
-        'landings_today': Landing.query.filter(Landing.landing_time >= start_of_day).count(),
+        'landings_today': Landing.query.filter(Landing.touchdown_time >= start_of_day).count(),
         'pending_invoices': Invoice.query.filter_by(status='draft').count(),
         'unread_alerts': Alert.query.filter_by(is_acknowledged=False).count(),
     }

@@ -107,7 +107,7 @@ def get_active_flights(use_external_api=True):
                     result.append({
                         'id': hash(flight_data.get('icao24', flight_data.get('callsign', ''))),
                         'callsign': flight_data.get('callsign') or flight_data.get('icao24', 'UNKNOWN'),
-                        'flight_number': flight_data.get('callsign'),
+                        'flight_number': flight_data.get('flight_number') or flight_data.get('callsign'),
                         'latitude': lat,
                         'longitude': lon,
                         'altitude': alt,
@@ -122,9 +122,9 @@ def get_active_flights(use_external_api=True):
                         'squawk': flight_data.get('squawk'),
                         'aircraft': {
                             'registration': flight_data.get('registration'),
-                            'model': flight_data.get('aircraft_type'),
-                            'type': flight_data.get('aircraft_type'),
-                            'operator': flight_data.get('airline_iata')
+                            'model': flight_data.get('aircraft_type_iata') or flight_data.get('aircraft_type_icao'),
+                            'type': flight_data.get('aircraft_type_icao') or flight_data.get('aircraft_type_iata'),
+                            'operator': flight_data.get('airline_name') or flight_data.get('airline_iata')
                         }
                     })
                 

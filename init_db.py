@@ -14,7 +14,9 @@ import random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask
-from models import db, User, Aircraft, Airport, Airline, TariffConfig, Flight, Overflight, Landing, Alert
+from models import (db, User, Aircraft, Airport, Airline, TariffConfig, Flight, 
+                    Overflight, Landing, Alert, FlightPosition, FlightRoute, 
+                    Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog)
 
 
 def create_app():
@@ -86,29 +88,29 @@ def init_database():
         print("   - Création des aéroports RDC...")
         airports = [
             Airport(icao_code='FZAA', iata_code='FIH', name="Aéroport International de N'Djili", 
-                    city='Kinshasa', country='RDC', latitude=-4.3858, longitude=15.4446, elevation=313, is_domestic=True, status='open'),
+                    city='Kinshasa', country='RDC', latitude=-4.3858, longitude=15.4446, elevation_ft=313, is_domestic=True, status='open'),
             Airport(icao_code='FZQA', iata_code='FBM', name="Aéroport International de Lubumbashi",
-                    city='Lubumbashi', country='RDC', latitude=-11.5913, longitude=27.5309, elevation=1295, is_domestic=True, status='open'),
+                    city='Lubumbashi', country='RDC', latitude=-11.5913, longitude=27.5309, elevation_ft=1295, is_domestic=True, status='open'),
             Airport(icao_code='FZNA', iata_code='GOM', name="Aéroport International de Goma",
-                    city='Goma', country='RDC', latitude=-1.6708, longitude=29.2385, elevation=1528, is_domestic=True, status='open'),
+                    city='Goma', country='RDC', latitude=-1.6708, longitude=29.2385, elevation_ft=1528, is_domestic=True, status='open'),
             Airport(icao_code='FZOA', iata_code='FKI', name="Aéroport de Kisangani Bangoka",
-                    city='Kisangani', country='RDC', latitude=0.4817, longitude=25.3379, elevation=447, is_domestic=True, status='open'),
+                    city='Kisangani', country='RDC', latitude=0.4817, longitude=25.3379, elevation_ft=447, is_domestic=True, status='open'),
             Airport(icao_code='FZWA', iata_code='MJM', name="Aéroport de Mbuji-Mayi",
-                    city='Mbuji-Mayi', country='RDC', latitude=-6.1212, longitude=23.5690, elevation=609, is_domestic=True, status='open'),
+                    city='Mbuji-Mayi', country='RDC', latitude=-6.1212, longitude=23.5690, elevation_ft=609, is_domestic=True, status='open'),
             Airport(icao_code='FZRA', iata_code='KWZ', name="Aéroport de Kolwezi",
-                    city='Kolwezi', country='RDC', latitude=-10.7659, longitude=25.5057, elevation=1518, is_domestic=True, status='open'),
+                    city='Kolwezi', country='RDC', latitude=-10.7659, longitude=25.5057, elevation_ft=1518, is_domestic=True, status='open'),
             Airport(icao_code='FZIC', iata_code='MAT', name="Aéroport de Matadi Tshimpi",
-                    city='Matadi', country='RDC', latitude=-5.7996, longitude=13.4404, elevation=350, is_domestic=True, status='open'),
+                    city='Matadi', country='RDC', latitude=-5.7996, longitude=13.4404, elevation_ft=350, is_domestic=True, status='open'),
             Airport(icao_code='FZKA', iata_code='KMN', name="Aéroport de Kamina",
-                    city='Kamina', country='RDC', latitude=-8.6420, longitude=25.2528, elevation=1060, is_domestic=True, status='open'),
+                    city='Kamina', country='RDC', latitude=-8.6420, longitude=25.2528, elevation_ft=1060, is_domestic=True, status='open'),
             Airport(icao_code='FAOR', iata_code='JNB', name="O.R. Tambo International",
-                    city='Johannesburg', country='RSA', latitude=-26.1392, longitude=28.246, elevation=1694, is_domestic=False, status='open'),
+                    city='Johannesburg', country='RSA', latitude=-26.1392, longitude=28.246, elevation_ft=1694, is_domestic=False, status='open'),
             Airport(icao_code='HKJK', iata_code='NBO', name="Jomo Kenyatta International",
-                    city='Nairobi', country='Kenya', latitude=-1.3192, longitude=36.9278, elevation=1624, is_domestic=False, status='open'),
+                    city='Nairobi', country='Kenya', latitude=-1.3192, longitude=36.9278, elevation_ft=1624, is_domestic=False, status='open'),
             Airport(icao_code='HAAB', iata_code='ADD', name="Bole International",
-                    city='Addis Ababa', country='Ethiopia', latitude=8.9779, longitude=38.7993, elevation=2334, is_domestic=False, status='open'),
+                    city='Addis Ababa', country='Ethiopia', latitude=8.9779, longitude=38.7993, elevation_ft=2334, is_domestic=False, status='open'),
             Airport(icao_code='LFPG', iata_code='CDG', name="Paris Charles de Gaulle",
-                    city='Paris', country='France', latitude=49.0097, longitude=2.5479, elevation=119, is_domestic=False, status='open'),
+                    city='Paris', country='France', latitude=49.0097, longitude=2.5479, elevation_ft=119, is_domestic=False, status='open'),
         ]
         
         for airport in airports:
@@ -139,25 +141,25 @@ def init_database():
         
         print("   - Création des aéronefs...")
         aircraft = [
-            Aircraft(icao_code='4L0001', registration='9Q-CDC', model='Boeing 737-800', type_code='B738',
+            Aircraft(icao24='4L0001', registration='9Q-CDC', model='Boeing 737-800', type_code='B738',
                      operator='Congo Airways', operator_iata='8V', mtow=79010, category='commercial'),
-            Aircraft(icao_code='4L0002', registration='9Q-CDD', model='Airbus A320', type_code='A320',
+            Aircraft(icao24='4L0002', registration='9Q-CDD', model='Airbus A320', type_code='A320',
                      operator='Congo Airways', operator_iata='8V', mtow=77000, category='commercial'),
-            Aircraft(icao_code='F-GKXS', registration='F-GKXS', model='Airbus A330-200', type_code='A332',
+            Aircraft(icao24='F-GKXS', registration='F-GKXS', model='Airbus A330-200', type_code='A332',
                      operator='Air France', operator_iata='AF', mtow=230000, category='commercial'),
-            Aircraft(icao_code='ET-AVJ', registration='ET-AVJ', model='Boeing 787-9', type_code='B789',
+            Aircraft(icao24='ET-AVJ', registration='ET-AVJ', model='Boeing 787-9', type_code='B789',
                      operator='Ethiopian Airlines', operator_iata='ET', mtow=254011, category='commercial'),
-            Aircraft(icao_code='5Y-KZA', registration='5Y-KZA', model='Boeing 737-800', type_code='B738',
+            Aircraft(icao24='5Y-KZA', registration='5Y-KZA', model='Boeing 737-800', type_code='B738',
                      operator='Kenya Airways', operator_iata='KQ', mtow=79010, category='commercial'),
-            Aircraft(icao_code='ZS-SNA', registration='ZS-SNA', model='Airbus A340-300', type_code='A343',
+            Aircraft(icao24='ZS-SNA', registration='ZS-SNA', model='Airbus A340-300', type_code='A343',
                      operator='South African Airways', operator_iata='SA', mtow=276500, category='commercial'),
-            Aircraft(icao_code='9XR-WP', registration='9XR-WP', model='Airbus A330-200', type_code='A332',
+            Aircraft(icao24='9XR-WP', registration='9XR-WP', model='Airbus A330-200', type_code='A332',
                      operator='RwandAir', operator_iata='RW', mtow=230000, category='commercial'),
-            Aircraft(icao_code='A7-BFA', registration='A7-BFA', model='Boeing 777F', type_code='B77F',
+            Aircraft(icao24='A7-BFA', registration='A7-BFA', model='Boeing 777F', type_code='B77F',
                      operator='Qatar Airways', operator_iata='QR', mtow=347800, category='cargo'),
-            Aircraft(icao_code='9Q-CHC', registration='9Q-CHC', model='Cessna 208 Caravan', type_code='C208',
+            Aircraft(icao24='9Q-CHC', registration='9Q-CHC', model='Cessna 208 Caravan', type_code='C208',
                      operator='CAA', operator_iata='', mtow=3629, category='private'),
-            Aircraft(icao_code='9Q-CMK', registration='9Q-CMK', model='ATR 72-500', type_code='AT75',
+            Aircraft(icao24='9Q-CMK', registration='9Q-CMK', model='ATR 72-500', type_code='AT75',
                      operator='Malu Aviation', operator_iata='', mtow=22800, category='commercial'),
         ]
         
@@ -279,12 +281,13 @@ def init_database():
                 flight_id=1,
                 aircraft_id=1,
                 airport_icao='FZQA',
-                landing_time=datetime.now() - timedelta(hours=3),
+                touchdown_time=datetime.now() - timedelta(hours=3),
                 parking_start=datetime.now() - timedelta(hours=2, minutes=45),
                 parking_end=datetime.now() - timedelta(hours=1),
                 parking_duration_minutes=105,
                 is_night=False,
-                is_billed=True
+                is_billed=True,
+                status='completed'
             ),
         ]
         
