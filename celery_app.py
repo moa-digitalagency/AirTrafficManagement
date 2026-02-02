@@ -41,6 +41,10 @@ celery.conf.beat_schedule = {
         'task': 'tasks.flight_tasks.check_airspace_entries',
         'schedule': 10.0,  # Every 10 seconds
     },
+    'check-airport-movements': {
+        'task': 'tasks.flight_tasks.check_airport_movements',
+        'schedule': 10.0,  # Every 10 seconds
+    },
     'generate-pending-invoices': {
         'task': 'tasks.invoice_tasks.generate_pending_invoices',
         'schedule': 3600.0,  # Every hour

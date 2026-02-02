@@ -151,3 +151,59 @@ def process_flight_data(flight_data: dict):
             db.session.commit()
             
         return {'status': 'updated', 'callsign': flight_data.get('callsign')}
+
+
+@celery.task(bind=True, max_retries=3)
+def check_airport_movements(self):
+    """
+    Check for aircraft landings and parking at RDC airports
+    """
+    try:
+        from app import app
+        from models import db, Flight
+        from services.flight_tracker import check_landing_events
+
+        with app.app_context():
+            # Check flights that are approaching or on ground
+            # We also include in_flight just in case they are descending near an airport
+            active_flights = Flight.query.filter(
+                Flight.flight_status.in_(['in_flight', 'approaching', 'on_ground'])
+            ).all()
+
+            movements = []
+
+            for flight in active_flights:
+                if flight.current_latitude is None or flight.current_longitude is None:
+                    continue
+
+                landing = check_landing_events(
+                    flight.id,
+                    flight.current_latitude,
+                    flight.current_longitude,
+                    flight.current_altitude,
+                    flight.current_speed
+                )
+
+                if landing:
+                    # Update flight status based on landing status
+                    if landing.status == 'approach':
+                        flight.flight_status = 'approaching'
+                    elif landing.status in ['landed', 'parking']:
+                         flight.flight_status = 'on_ground'
+                    elif landing.status == 'completed':
+                         flight.flight_status = 'in_flight'
+
+                    movements.append({
+                        'callsign': flight.callsign,
+                        'status': landing.status,
+                        'airport': landing.airport_icao
+                    })
+
+            db.session.commit()
+            return {
+                'status': 'success',
+                'movements': movements
+            }
+
+    except Exception as exc:
+        self.retry(exc=exc, countdown=10)
