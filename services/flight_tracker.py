@@ -9,8 +9,13 @@ import math
 import os
 from functools import lru_cache
 
-from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig
+from shapely.geometry import Point, shape
+from shapely.prepared import prep
+from geoalchemy2.shape import to_shape
+from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig, Airspace
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
+
+CACHED_RDC_BOUNDARY_GEOM = None
 
 RDC_BOUNDARY = {
     "type": "Feature",
@@ -61,31 +66,48 @@ def get_rdc_boundary():
     return RDC_BOUNDARY
 
 
+def get_rdc_boundary_geom():
+    """
+    Get cached RDC boundary geometry (prepared for fast spatial checks).
+    Tries DB first, falls back to hardcoded constant.
+    """
+    global CACHED_RDC_BOUNDARY_GEOM
+
+    if CACHED_RDC_BOUNDARY_GEOM is not None:
+        return CACHED_RDC_BOUNDARY_GEOM
+
+    # Try fetching from DB
+    try:
+        airspace = Airspace.query.filter_by(type='boundary').first()
+        if airspace and airspace.geom is not None:
+            # Convert WKBElement to Shapely geometry
+            geom = to_shape(airspace.geom)
+            # Prepare for fast spatial predicates
+            CACHED_RDC_BOUNDARY_GEOM = prep(geom)
+            return CACHED_RDC_BOUNDARY_GEOM
+    except Exception as e:
+        print(f"[FlightTracker] Failed to load boundary from DB: {e}")
+
+    # Fallback to hardcoded boundary
+    try:
+        geom = shape(RDC_BOUNDARY['geometry'])
+        CACHED_RDC_BOUNDARY_GEOM = prep(geom)
+        return CACHED_RDC_BOUNDARY_GEOM
+    except Exception as e:
+        print(f"[FlightTracker] Failed to load hardcoded boundary: {e}")
+        return None
+
+
 def is_point_in_rdc(lat, lon):
     """
-    Check if point is in RDC using PostGIS (primary) or Shapely (fallback)
+    Check if point is in RDC using cached geometry (Shapely prepared).
     """
-    try:
-        from sqlalchemy import text
-        # Use PostGIS ST_Contains
-        sql = text("""
-            SELECT EXISTS (
-                SELECT 1 FROM airspaces
-                WHERE type = 'boundary'
-                AND ST_Contains(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326))
-            )
-        """)
-        # We need to ensure we are within an app context or session is active
-        # In this service, db is imported so session should be available
-        result = db.session.execute(sql, {'lon': lon, 'lat': lat}).scalar()
-        return bool(result)
-    except Exception as e:
-        # Fallback to Shapely if DB check fails (e.g. no DB connection in dev or during tests)
-        # This ensures resilience while satisfying the PostGIS requirement when available
-        from shapely.geometry import Point, shape
-        point = Point(lon, lat)
-        polygon = shape(RDC_BOUNDARY['geometry'])
-        return polygon.contains(point)
+    geom = get_rdc_boundary_geom()
+    if geom is None:
+        return False
+
+    point = Point(lon, lat)
+    return geom.contains(point)
 
 
 def get_active_flights(use_external_api=True):
