@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from geoalchemy2 import Geometry
 from .base import db
 
 class Flight(db.Model):
@@ -106,6 +107,10 @@ class FlightPosition(db.Model):
     on_ground = db.Column(db.Boolean, default=False)
     is_in_rdc = db.Column(db.Boolean, default=False, index=True)
     source = db.Column(db.String(50))
+
+    # PostGIS Geometry column for spatial queries
+    geom = db.Column(Geometry('POINT', srid=4326))
+
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 
     flight = db.relationship('Flight', backref=db.backref('positions', lazy='dynamic'))

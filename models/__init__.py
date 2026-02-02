@@ -7,3 +7,4 @@ from .flight import Flight, FlightPosition, FlightRoute
 from .operations import Overflight, Landing
 from .billing import Invoice, InvoiceLineItem, TariffConfig
 from .system import AuditLog, Alert, Notification, SystemConfig
+from .airspace import Airspace

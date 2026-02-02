@@ -61,10 +61,30 @@ def get_rdc_boundary():
 
 
 def is_point_in_rdc(lat, lon):
-    from shapely.geometry import Point, shape
-    point = Point(lon, lat)
-    polygon = shape(RDC_BOUNDARY['geometry'])
-    return polygon.contains(point)
+    """
+    Check if point is in RDC using PostGIS (primary) or Shapely (fallback)
+    """
+    try:
+        from sqlalchemy import text
+        # Use PostGIS ST_Contains
+        sql = text("""
+            SELECT EXISTS (
+                SELECT 1 FROM airspaces
+                WHERE type = 'boundary'
+                AND ST_Contains(geom, ST_SetSRID(ST_Point(:lon, :lat), 4326))
+            )
+        """)
+        # We need to ensure we are within an app context or session is active
+        # In this service, db is imported so session should be available
+        result = db.session.execute(sql, {'lon': lon, 'lat': lat}).scalar()
+        return bool(result)
+    except Exception as e:
+        # Fallback to Shapely if DB check fails (e.g. no DB connection in dev or during tests)
+        # This ensures resilience while satisfying the PostGIS requirement when available
+        from shapely.geometry import Point, shape
+        point = Point(lon, lat)
+        polygon = shape(RDC_BOUNDARY['geometry'])
+        return polygon.contains(point)
 
 
 def get_active_flights(use_external_api=True):

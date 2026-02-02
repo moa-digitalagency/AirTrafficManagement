@@ -27,14 +27,18 @@ def fetch_flight_positions(self):
                 ).first()
                 
                 if flight:
+                    lat = flight_data.get('latitude')
+                    lon = flight_data.get('longitude')
+
                     position = FlightPosition(
                         flight_id=flight.id,
-                        latitude=flight_data.get('latitude'),
-                        longitude=flight_data.get('longitude'),
+                        latitude=lat,
+                        longitude=lon,
                         altitude=flight_data.get('altitude'),
                         heading=flight_data.get('heading'),
                         ground_speed=flight_data.get('ground_speed'),
-                        timestamp=datetime.utcnow()
+                        timestamp=datetime.utcnow(),
+                        geom=f'POINT({lon} {lat})' if lat is not None and lon is not None else None
                     )
                     db.session.add(position)
                     
