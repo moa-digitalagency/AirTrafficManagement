@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Vol {{ flight.callsign }} - ATM-RDC{% endblock %}
+{% block page_title %}Détails du Vol{% endblock %}
+{% block page_subtitle %}{{ flight.callsign }} - {{ flight.flight_number or 'N/A' }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-white">
+                    <i class="fas fa-plane mr-2 text-primary-400"></i>
+                    Informations du Vol
+                </h3>
+                
+                {% if flight.flight_status == 'in_flight' %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 text-green-400">
+                    <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
+                    En Vol
+                </span>
+                {% elif flight.flight_status == 'approaching' %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-400">
+                    En Approche
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-gray-500/20 text-gray-400">
+                    {{ flight.flight_status }}
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center justify-center gap-8 mb-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-xl bg-green-500/20 flex items-center justify-center mb-2 mx-auto">
+                        <i class="fas fa-plane-departure text-green-400 text-xl"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-white">{{ flight.departure_icao or '???' }}</p>
+                    <p class="text-sm text-gray-400">Départ</p>
+                </div>
+                
+                <div class="flex-1 max-w-xs">
+                    <div class="relative">
+                        <div class="border-t-2 border-dashed border-gray-600"></div>
+                        <i class="fas fa-plane text-primary-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-dark-400 px-2"></i>
+                    </div>
+                    <p class="text-center text-xs text-gray-500 mt-2">
+                        {% if flight.is_domestic %}Vol Domestique{% else %}Vol International{% endif %}
+                    </p>
+                </div>
+                
+                <div class="text-center">
+                    <div class="w-16 h-16 rounded-xl bg-blue-500/20 flex items-center justify-center mb-2 mx-auto">
+                        <i class="fas fa-plane-arrival text-blue-400 text-xl"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-white">{{ flight.arrival_icao or '???' }}</p>
+                    <p class="text-sm text-gray-400">Arrivée</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Indicatif</p>
+                    <p class="text-white font-semibold">{{ flight.callsign }}</p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">N° Vol</p>
+                    <p class="text-white font-semibold">{{ flight.flight_number or '-' }}</p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Type</p>
+                    <p class="text-white font-semibold">{{ flight.flight_type or 'N/A' }}</p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Créé le</p>
+                    <p class="text-white font-semibold">{{ flight.created_at.strftime('%d/%m/%Y') if flight.created_at else '-' }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <h3 class="text-lg font-semibold text-white mb-4">
+                <i class="fas fa-clock mr-2 text-primary-400"></i>
+                Horaires
+            </h3>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Départ prévu</p>
+                    <p class="text-white font-semibold">
+                        {{ flight.scheduled_departure.strftime('%d/%m %H:%M') if flight.scheduled_departure else '--:--' }}
+                    </p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Départ réel</p>
+                    <p class="text-white font-semibold">
+                        {{ flight.actual_departure.strftime('%d/%m %H:%M') if flight.actual_departure else '--:--' }}
+                    </p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Arrivée prévue</p>
+                    <p class="text-white font-semibold">
+                        {{ flight.scheduled_arrival.strftime('%d/%m %H:%M') if flight.scheduled_arrival else '--:--' }}
+                    </p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Arrivée réelle</p>
+                    <p class="text-white font-semibold">
+                        {{ flight.actual_arrival.strftime('%d/%m %H:%M') if flight.actual_arrival else '--:--' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        {% if overflights %}
+        <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+            <div class="p-4 border-b border-dark-100">
+                <h3 class="font-semibold text-white">
+                    <i class="fas fa-route mr-2 text-purple-400"></i>
+                    Survols Associés
+                </h3>
+            </div>
+            
+            <div class="p-4 space-y-3">
+                {% for ovf in overflights %}
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-medium text-white">{{ ovf.session_id }}</span>
+                        <span class="text-sm text-gray-400">{{ ovf.duration_minutes|round(0)|int }} min</span>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        Distance: {{ (ovf.distance_km or 0)|round(1) }} km
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="space-y-6">
+        {% if flight.aircraft %}
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <h3 class="font-semibold text-white mb-4">
+                <i class="fas fa-plane mr-2 text-primary-400"></i>
+                Aéronef
+            </h3>
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Immatriculation</span>
+                    <span class="text-white font-medium">{{ flight.aircraft.registration or '-' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Modèle</span>
+                    <span class="text-white font-medium">{{ flight.aircraft.model or '-' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Type</span>
+                    <span class="text-white font-medium">{{ flight.aircraft.type_code or '-' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Opérateur</span>
+                    <span class="text-white font-medium">{{ flight.aircraft.operator or '-' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">MTOW</span>
+                    <span class="text-white font-medium">{{ (flight.aircraft.mtow or 0)|round(0)|int }} kg</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <h3 class="font-semibold text-white mb-4">
+                <i class="fas fa-cogs mr-2 text-primary-400"></i>
+                Actions
+            </h3>
+            
+            <div class="space-y-3">
+                <a href="{{ url_for('radar.index') }}" class="flex items-center gap-3 p-3 bg-dark-300 rounded-lg hover:bg-dark-200 transition-colors">
+                    <i class="fas fa-satellite-dish text-primary-400"></i>
+                    <span class="text-white">Voir sur le radar</span>
+                </a>
+                
+                {% if current_user.role in ['superadmin', 'billing'] %}
+                <a href="{{ url_for('invoices.create') }}" class="flex items-center gap-3 p-3 bg-dark-300 rounded-lg hover:bg-dark-200 transition-colors">
+                    <i class="fas fa-file-invoice text-yellow-400"></i>
+                    <span class="text-white">Créer une facture</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <a href="{{ url_for('flights.index') }}" class="flex items-center justify-center gap-2 p-3 bg-dark-300 text-gray-300 hover:text-white rounded-lg transition-colors">
+            <i class="fas fa-arrow-left"></i>
+            <span>Retour à la liste</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

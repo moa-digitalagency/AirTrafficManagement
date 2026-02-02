@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Radar Live - ATM-RDC{% endblock %}
+{% block page_title %}Radar de Surveillance{% endblock %}
+{% block page_subtitle %}Temps réel - Espace aérien RDC{% endblock %}
+
+{% block head %}
+<style>
+    #radar-map {
+        height: calc(100vh - 220px);
+        min-height: 500px;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .aircraft-marker {
+        background: none;
+        border: none;
+    }
+    
+    .aircraft-label {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(59, 130, 246, 0.5);
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 10px;
+        color: white;
+        white-space: nowrap;
+        margin-top: 2px;
+    }
+    
+    .flight-info-popup .leaflet-popup-content-wrapper {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 8px;
+        color: white;
+    }
+    
+    .flight-info-popup .leaflet-popup-tip {
+        background: rgba(15, 23, 42, 0.95);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex gap-6 h-full">
+    <div class="flex-1">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+            <div class="p-4 border-b border-dark-100 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <h3 class="font-semibold text-white">
+                        <i class="fas fa-radar mr-2 text-primary-400"></i>
+                        Carte Radar
+                    </h3>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
+                        <span class="text-green-400" id="flights-count">0 vols actifs</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button onclick="zoomToRDC()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" data-testid="btn-zoom-rdc">
+                        <i class="fas fa-globe-africa mr-1"></i> RDC
+                    </button>
+                    <button onclick="toggleLayers()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" data-testid="btn-layers">
+                        <i class="fas fa-layer-group mr-1"></i> Couches
+                    </button>
+                    <button onclick="refreshFlights()" class="px-3 py-1.5 bg-primary-600 text-white hover:bg-primary-500 rounded-lg text-sm transition-colors" data-testid="btn-refresh">
+                        <i class="fas fa-sync-alt mr-1"></i> Actualiser
+                    </button>
+                </div>
+            </div>
+            
+            <div id="radar-map" data-testid="radar-map"></div>
+        </div>
+    </div>
+    
+    <div class="w-80 flex flex-col gap-4">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
+            <h4 class="font-semibold text-white mb-4">
+                <i class="fas fa-filter mr-2 text-primary-400"></i>
+                Filtres
+            </h4>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Région</label>
+                    <select id="filter-region" class="w-full px-3 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" data-testid="select-region">
+                        <option value="all">Tout le pays</option>
+                        <option value="kinshasa">Kinshasa</option>
+                        <option value="katanga">Katanga</option>
+                        <option value="nord_kivu">Nord-Kivu</option>
+                        <option value="equateur">Équateur</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Statut</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-green-500 focus:ring-green-500" data-status="in_flight">
+                            <span class="w-2.5 h-2.5 bg-green-400 rounded-full"></span>
+                            <span class="text-sm text-gray-300">En Vol</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-yellow-500 focus:ring-yellow-500" data-status="approaching">
+                            <span class="w-2.5 h-2.5 bg-yellow-400 rounded-full"></span>
+                            <span class="text-sm text-gray-300">En Approche</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-blue-500 focus:ring-blue-500" data-status="on_ground">
+                            <span class="w-2.5 h-2.5 bg-blue-400 rounded-full"></span>
+                            <span class="text-sm text-gray-300">Au Sol</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
+            <h4 class="font-semibold text-white mb-4">
+                <i class="fas fa-info-circle mr-2 text-primary-400"></i>
+                Légende
+            </h4>
+            
+            <div class="space-y-3 text-sm">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-plane text-green-400 rotate-45"></i>
+                    <span class="text-gray-300">Vol en croisière</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-plane text-yellow-400 rotate-45"></i>
+                    <span class="text-gray-300">Montée/Descente</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-plane text-red-400 rotate-45"></i>
+                    <span class="text-gray-300">Urgence (7700)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-circle text-blue-400 text-xs"></i>
+                    <span class="text-gray-300">Aéroport</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 flex-1 overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-dark-100">
+                <h4 class="font-semibold text-white">
+                    <i class="fas fa-list mr-2 text-primary-400"></i>
+                    Vols Actifs
+                </h4>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-2" id="flights-list">
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p class="text-sm">Chargement...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let map;
+    let flightsLayer;
+    let boundaryLayer;
+    let airportsLayer;
+    let flights = [];
+    
+    const airports = {{ airports | map(attribute='to_dict') | list | tojson | safe }};
+    
+    function initMap() {
+        map = L.map('radar-map', {
+            center: [-2.5, 23.5],
+            zoom: 5,
+            zoomControl: true,
+            attributionControl: false
+        });
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(map);
+        
+        flightsLayer = L.layerGroup().addTo(map);
+        boundaryLayer = L.layerGroup().addTo(map);
+        airportsLayer = L.layerGroup().addTo(map);
+        
+        loadBoundary();
+        loadAirports();
+        loadFlights();
+        
+        setInterval(loadFlights, 10000);
+    }
+    
+    async function loadBoundary() {
+        try {
+            const response = await fetch('/radar/api/boundary');
+            const boundary = await response.json();
+            
+            L.geoJSON(boundary, {
+                style: {
+                    color: '#3b82f6',
+                    weight: 2,
+                    opacity: 0.8,
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.05
+                }
+            }).addTo(boundaryLayer);
+        } catch (e) {
+            console.error('Error loading boundary:', e);
+        }
+    }
+    
+    function loadAirports() {
+        airports.forEach(airport => {
+            if (airport.latitude && airport.longitude) {
+                const marker = L.circleMarker([airport.latitude, airport.longitude], {
+                    radius: 6,
+                    fillColor: '#3b82f6',
+                    color: '#1e40af',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+                
+                marker.bindTooltip(`<b>${airport.icao_code}</b><br>${airport.name}`, {
+                    permanent: false,
+                    direction: 'top',
+                    className: 'aircraft-label'
+                });
+                
+                marker.addTo(airportsLayer);
+            }
+        });
+    }
+    
+    async function loadFlights() {
+        try {
+            const response = await fetch('/radar/api/flights');
+            flights = await response.json();
+            
+            updateFlightsOnMap();
+            updateFlightsList();
+            
+            document.getElementById('flights-count').textContent = `${flights.length} vols actifs`;
+        } catch (e) {
+            console.error('Error loading flights:', e);
+        }
+    }
+    
+    function updateFlightsOnMap() {
+        flightsLayer.clearLayers();
+        
+        flights.forEach(flight => {
+            if (!flight.latitude || !flight.longitude) return;
+            
+            const color = flight.status === 'in_flight' ? '#22c55e' : 
+                         flight.status === 'approaching' ? '#eab308' : '#3b82f6';
+            
+            const rotation = flight.heading || 0;
+            
+            const icon = L.divIcon({
+                className: 'aircraft-marker',
+                html: `<div style="transform: rotate(${rotation}deg); color: ${color}; font-size: 16px;">
+                         <i class="fas fa-plane"></i>
+                       </div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+            
+            const marker = L.marker([flight.latitude, flight.longitude], { icon });
+            
+            const popupContent = `
+                <div class="p-2">
+                    <div class="font-bold text-lg mb-2">${flight.callsign}</div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div><span class="text-gray-400">Vol:</span> ${flight.flight_number || '-'}</div>
+                        <div><span class="text-gray-400">Alt:</span> ${Math.round(flight.altitude || 0).toLocaleString()} ft</div>
+                        <div><span class="text-gray-400">Vit:</span> ${Math.round(flight.ground_speed || 0)} kts</div>
+                        <div><span class="text-gray-400">Cap:</span> ${Math.round(flight.heading || 0)}°</div>
+                        <div><span class="text-gray-400">Dep:</span> ${flight.departure || '???'}</div>
+                        <div><span class="text-gray-400">Arr:</span> ${flight.arrival || '???'}</div>
+                    </div>
+                    ${flight.aircraft ? `
+                    <div class="mt-2 pt-2 border-t border-dark-100 text-sm">
+                        <div>${flight.aircraft.operator || '-'}</div>
+                        <div class="text-gray-400">${flight.aircraft.model || '-'} (${flight.aircraft.registration || '-'})</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent, {
+                className: 'flight-info-popup',
+                maxWidth: 300
+            });
+            
+            marker.bindTooltip(flight.callsign, {
+                permanent: true,
+                direction: 'bottom',
+                offset: [0, 8],
+                className: 'aircraft-label'
+            });
+            
+            marker.addTo(flightsLayer);
+        });
+    }
+    
+    function updateFlightsList() {
+        const container = document.getElementById('flights-list');
+        
+        if (flights.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-plane-slash text-2xl mb-2"></i>
+                    <p class="text-sm">Aucun vol actif</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = flights.map(flight => `
+            <div class="p-3 rounded-lg hover:bg-dark-300 cursor-pointer transition-colors mb-2" onclick="focusFlight(${flight.latitude}, ${flight.longitude})" data-testid="flight-item-${flight.id}">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium text-white">${flight.callsign}</span>
+                    <span class="w-2 h-2 rounded-full ${flight.status === 'in_flight' ? 'bg-green-400' : flight.status === 'approaching' ? 'bg-yellow-400' : 'bg-blue-400'}"></span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-gray-400">
+                    <span>${flight.departure || '???'}</span>
+                    <i class="fas fa-long-arrow-alt-right"></i>
+                    <span>${flight.arrival || '???'}</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                    FL${Math.round((flight.altitude || 0) / 100)} • ${Math.round(flight.ground_speed || 0)} kts
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function focusFlight(lat, lon) {
+        if (lat && lon) {
+            map.setView([lat, lon], 8);
+        }
+    }
+    
+    function zoomToRDC() {
+        map.setView([-2.5, 23.5], 5);
+    }
+    
+    function toggleLayers() {
+        if (map.hasLayer(boundaryLayer)) {
+            map.removeLayer(boundaryLayer);
+        } else {
+            map.addLayer(boundaryLayer);
+        }
+    }
+    
+    function refreshFlights() {
+        loadFlights();
+    }
+    
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}

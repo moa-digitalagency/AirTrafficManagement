@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Utilisateurs - ATM-RDC{% endblock %}
+{% block page_title %}Gestion des Utilisateurs{% endblock %}
+{% block page_subtitle %}RBAC - Contrôle d'accès{% endblock %}
+
+{% block content %}
+<div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+    <div class="p-4 border-b border-dark-100 flex items-center justify-between">
+        <h3 class="font-semibold text-white">
+            <i class="fas fa-users mr-2 text-primary-400"></i>
+            Liste des Utilisateurs
+        </h3>
+        <a href="{{ url_for('admin.create_user') }}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors" data-testid="btn-create-user">
+            <i class="fas fa-plus mr-1"></i> Nouvel Utilisateur
+        </a>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-dark-300">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Utilisateur</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Email</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Rôle</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Dernière connexion</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Statut</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-100">
+                {% for user in users %}
+                <tr class="hover:bg-dark-300/50 transition-colors" data-testid="user-row-{{ user.id }}">
+                    <td class="px-4 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-primary-500/20 flex items-center justify-center">
+                                <span class="text-primary-400 font-semibold">{{ user.username[0].upper() }}</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-white">{{ user.first_name or '' }} {{ user.last_name or '' }}</p>
+                                <p class="text-sm text-gray-400">@{{ user.username }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4 text-gray-400">{{ user.email }}</td>
+                    <td class="px-4 py-4">
+                        {% if user.role == 'superadmin' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                            SuperAdmin
+                        </span>
+                        {% elif user.role == 'supervisor' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400">
+                            Superviseur
+                        </span>
+                        {% elif user.role == 'controller' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+                            Contrôleur
+                        </span>
+                        {% elif user.role == 'billing' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
+                            Facturation
+                        </span>
+                        {% elif user.role == 'auditor' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                            Auditeur
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
+                            Observateur
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-4 text-gray-400">
+                        {{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else 'Jamais' }}
+                    </td>
+                    <td class="px-4 py-4">
+                        {% if user.is_active %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                            <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                            Actif
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                            <span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                            Inactif
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-4">
+                        <div class="flex items-center gap-2">
+                            <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" 
+                               class="p-2 text-gray-400 hover:text-white transition-colors" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="p-2 text-gray-400 hover:text-{% if user.is_active %}red{% else %}green{% endif %}-400 transition-colors" title="{% if user.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                    <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

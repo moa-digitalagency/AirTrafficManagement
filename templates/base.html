@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Système Intégré de Gestion du Trafic Aérien - RDC">
+    <title>{% block title %}ATM-RDC{% endblock %}</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        dark: {
+                            100: '#1e293b',
+                            200: '#1a2234',
+                            300: '#151c2c',
+                            400: '#111827',
+                            500: '#0f172a',
+                            600: '#0c1322',
+                            700: '#090f1a',
+                            800: '#060b12',
+                            900: '#03070a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .sidebar-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .sidebar-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .card-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+        
+        .status-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .aircraft-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        .leaflet-container {
+            background: #0f172a;
+        }
+        
+        .alert-badge {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        
+        .gradient-border {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-dark-500 text-gray-100 min-h-screen">
+    {% if current_user.is_authenticated %}
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-64 bg-dark-400 border-r border-dark-100 flex flex-col">
+            <div class="p-4 border-b border-dark-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg gradient-border flex items-center justify-center">
+                        <i class="fas fa-plane text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg text-white">ATM-RDC</h1>
+                        <p class="text-xs text-gray-400">Air Traffic Management</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="flex-1 py-4 overflow-y-auto">
+                <div class="px-3 mb-2">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Principal</span>
+                </div>
+                
+                <a href="{{ url_for('dashboard.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}" data-testid="nav-dashboard">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span>Tableau de Bord</span>
+                </a>
+                
+                <a href="{{ url_for('radar.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'radar.index' in request.endpoint %}active{% endif %}" data-testid="nav-radar">
+                    <i class="fas fa-satellite-dish w-5"></i>
+                    <span>Radar Live</span>
+                </a>
+                
+                <a href="{{ url_for('radar.overflights') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'overflight' in request.endpoint %}active{% endif %}" data-testid="nav-overflights">
+                    <i class="fas fa-route w-5"></i>
+                    <span>Survols</span>
+                </a>
+                
+                <a href="{{ url_for('radar.terminal') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'terminal' in request.endpoint %}active{% endif %}" data-testid="nav-terminal">
+                    <i class="fas fa-tower-broadcast w-5"></i>
+                    <span>Terminal</span>
+                </a>
+                
+                <div class="px-3 mt-6 mb-2">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Gestion</span>
+                </div>
+                
+                <a href="{{ url_for('flights.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'flights' in request.endpoint %}active{% endif %}" data-testid="nav-flights">
+                    <i class="fas fa-plane-departure w-5"></i>
+                    <span>Vols</span>
+                </a>
+                
+                {% if current_user.role in ['superadmin', 'billing', 'supervisor'] %}
+                <a href="{{ url_for('invoices.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'invoices' in request.endpoint %}active{% endif %}" data-testid="nav-invoices">
+                    <i class="fas fa-file-invoice-dollar w-5"></i>
+                    <span>Facturation</span>
+                </a>
+                {% endif %}
+                
+                {% if current_user.role in ['superadmin', 'auditor'] %}
+                <div class="px-3 mt-6 mb-2">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</span>
+                </div>
+                
+                <a href="{{ url_for('admin.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.index' in request.endpoint %}active{% endif %}" data-testid="nav-admin">
+                    <i class="fas fa-cog w-5"></i>
+                    <span>Paramètres</span>
+                </a>
+                
+                <a href="{{ url_for('admin.users') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.users' in request.endpoint %}active{% endif %}" data-testid="nav-users">
+                    <i class="fas fa-users w-5"></i>
+                    <span>Utilisateurs</span>
+                </a>
+                
+                <a href="{{ url_for('admin.audit_logs') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'audit' in request.endpoint %}active{% endif %}" data-testid="nav-audit">
+                    <i class="fas fa-clipboard-list w-5"></i>
+                    <span>Journal d'Audit</span>
+                </a>
+                {% endif %}
+            </nav>
+            
+            <div class="p-4 border-t border-dark-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
+                        <span class="text-white font-semibold">{{ current_user.username[0].upper() }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">{{ current_user.first_name or current_user.username }}</p>
+                        <p class="text-xs text-gray-400 capitalize">{{ current_user.role }}</p>
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}" class="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Déconnexion" data-testid="btn-logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-dark-400 border-b border-dark-100 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h2>
+                        <p class="text-sm text-gray-400">{% block page_subtitle %}{% endblock %}</p>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 text-sm text-gray-400">
+                            <i class="fas fa-clock"></i>
+                            <span id="current-time">--:--:--</span>
+                            <span>UTC</span>
+                        </div>
+                        
+                        <div class="relative" id="alerts-dropdown">
+                            <button class="relative p-2 text-gray-400 hover:text-white transition-colors" data-testid="btn-alerts">
+                                <i class="fas fa-bell text-lg"></i>
+                                <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center alert-badge" id="alert-count">0</span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 rounded-full text-sm">
+                            <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
+                            <span>Système Actif</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="flex-1 overflow-y-auto p-6">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                        <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-500/20 text-red-400 border border-red-500/30{% elif category == 'success' %}bg-green-500/20 text-green-400 border border-green-500/30{% else %}bg-blue-500/20 text-blue-400 border border-blue-500/30{% endif %}" data-testid="alert-message">
+                            <div class="flex items-center gap-2">
+                                <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    {% else %}
+    {% block auth_content %}{% endblock %}
+    {% endif %}
+    
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const utc = now.toISOString().substr(11, 8);
+            const el = document.getElementById('current-time');
+            if (el) el.textContent = utc;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        {% if current_user.is_authenticated %}
+        async function updateAlertCount() {
+            try {
+                const response = await fetch('/radar/api/alerts');
+                const alerts = await response.json();
+                const countEl = document.getElementById('alert-count');
+                if (countEl) {
+                    countEl.textContent = alerts.length;
+                    countEl.style.display = alerts.length > 0 ? 'flex' : 'none';
+                }
+            } catch (e) {
+                console.error('Error fetching alerts:', e);
+            }
+        }
+        setInterval(updateAlertCount, 30000);
+        updateAlertCount();
+        {% endif %}
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

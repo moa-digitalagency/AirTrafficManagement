@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Facture {{ invoice.invoice_number }} - ATM-RDC{% endblock %}
+{% block page_title %}Détails de la Facture{% endblock %}
+{% block page_subtitle %}{{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-white">
+                    <i class="fas fa-file-invoice mr-2 text-primary-400"></i>
+                    Informations de la Facture
+                </h3>
+                
+                {% if invoice.status == 'draft' %}
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-400">
+                    Brouillon
+                </span>
+                {% elif invoice.status == 'sent' %}
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500/20 text-blue-400">
+                    Envoyée
+                </span>
+                {% elif invoice.status == 'paid' %}
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 text-green-400">
+                    Payée
+                </span>
+                {% endif %}
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">N° Facture</p>
+                    <p class="text-white font-semibold">{{ invoice.invoice_number }}</p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Type</p>
+                    <p class="text-white font-semibold">{{ invoice.invoice_type or 'Standard' }}</p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Date de création</p>
+                    <p class="text-white font-semibold">{{ invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else '-' }}</p>
+                </div>
+                <div class="p-4 bg-dark-300 rounded-lg">
+                    <p class="text-gray-400 text-sm">Échéance</p>
+                    <p class="text-white font-semibold">{{ invoice.due_date.strftime('%d/%m/%Y') if invoice.due_date else '-' }}</p>
+                </div>
+            </div>
+            
+            {% if invoice.airline %}
+            <div class="p-4 bg-dark-300 rounded-lg">
+                <h4 class="font-medium text-white mb-2">Client</h4>
+                <p class="text-white">{{ invoice.airline.name }}</p>
+                <p class="text-gray-400 text-sm">{{ invoice.airline.iata_code }} / {{ invoice.airline.icao_code }}</p>
+                {% if invoice.airline.email %}
+                <p class="text-gray-400 text-sm mt-1">{{ invoice.airline.email }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+            <div class="p-4 border-b border-dark-100">
+                <h3 class="font-semibold text-white">
+                    <i class="fas fa-list mr-2 text-primary-400"></i>
+                    Détails des Services
+                </h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-dark-300">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Description</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Quantité</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Prix Unitaire</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-100">
+                        {% for ovf in invoice.overflights %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <span class="text-white">Survol {{ ovf.session_id }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-400">{{ (ovf.distance_km or 0)|round(1) }} km</td>
+                            <td class="px-4 py-3 text-gray-400">0.85 USD/km</td>
+                            <td class="px-4 py-3 text-right text-white">{{ ((ovf.distance_km or 0) * 0.85)|round(2) }} USD</td>
+                        </tr>
+                        {% endfor %}
+                        {% for land in invoice.landings %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <span class="text-white">Atterrissage {{ land.airport_icao }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-400">1</td>
+                            <td class="px-4 py-3 text-gray-400">150.00 USD</td>
+                            <td class="px-4 py-3 text-right text-white">150.00 USD</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not invoice.overflights and not invoice.landings %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+                                Aucun élément
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="space-y-6">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <h3 class="font-semibold text-white mb-4">
+                <i class="fas fa-calculator mr-2 text-primary-400"></i>
+                Montants
+            </h3>
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Sous-total</span>
+                    <span class="text-white font-medium">{{ "{:,.2f}".format(invoice.subtotal or 0) }} {{ invoice.currency }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">TVA (16%)</span>
+                    <span class="text-white font-medium">{{ "{:,.2f}".format(invoice.tax_amount or 0) }} {{ invoice.currency }}</span>
+                </div>
+                <hr class="border-dark-100 my-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-white font-semibold">Total TTC</span>
+                    <span class="text-2xl font-bold text-primary-400">{{ "{:,.2f}".format(invoice.total_amount or 0) }} {{ invoice.currency }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+            <h3 class="font-semibold text-white mb-4">
+                <i class="fas fa-cogs mr-2 text-primary-400"></i>
+                Actions
+            </h3>
+            
+            <div class="space-y-3">
+                <a href="{{ url_for('invoices.download_pdf', invoice_id=invoice.id) }}" 
+                   class="flex items-center justify-center gap-2 w-full py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors" data-testid="btn-download-pdf">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Télécharger PDF</span>
+                </a>
+                
+                {% if invoice.status == 'draft' %}
+                <form method="POST" action="{{ url_for('invoices.send_invoice', invoice_id=invoice.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors" data-testid="btn-send">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Marquer comme Envoyée</span>
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if invoice.status == 'sent' %}
+                <form method="POST" action="{{ url_for('invoices.mark_paid', invoice_id=invoice.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors" data-testid="btn-paid">
+                        <i class="fas fa-check"></i>
+                        <span>Marquer comme Payée</span>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        <a href="{{ url_for('invoices.index') }}" class="flex items-center justify-center gap-2 p-3 bg-dark-300 text-gray-300 hover:text-white rounded-lg transition-colors">
+            <i class="fas fa-arrow-left"></i>
+            <span>Retour à la liste</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

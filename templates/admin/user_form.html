@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{% if user %}Modifier{% else %}Créer{% endif %} Utilisateur - ATM-RDC{% endblock %}
+{% block page_title %}{% if user %}Modifier l'Utilisateur{% else %}Nouvel Utilisateur{% endif %}{% endblock %}
+{% block page_subtitle %}{% if user %}{{ user.username }}{% else %}Création d'un compte{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {% if not user %}
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Nom d'utilisateur *</label>
+                    <input type="text" name="username" required
+                           class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                           placeholder="Nom d'utilisateur"
+                           data-testid="input-username">
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Email *</label>
+                    <input type="email" name="email" value="{{ user.email if user else '' }}" required
+                           class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                           placeholder="email@exemple.com"
+                           data-testid="input-email">
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Prénom</label>
+                    <input type="text" name="first_name" value="{{ user.first_name if user else '' }}"
+                           class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                           placeholder="Prénom"
+                           data-testid="input-first-name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Nom</label>
+                    <input type="text" name="last_name" value="{{ user.last_name if user else '' }}"
+                           class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                           placeholder="Nom de famille"
+                           data-testid="input-last-name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Mot de passe {% if not user %}*{% endif %}</label>
+                    <input type="password" name="password" {% if not user %}required{% endif %}
+                           class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                           placeholder="{% if user %}Laisser vide pour ne pas changer{% else %}Mot de passe{% endif %}"
+                           data-testid="input-password">
+                </div>
+                
+                <div>
+                    <label class="block text-sm text-gray-400 mb-2">Rôle *</label>
+                    <select name="role" required
+                            class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            data-testid="select-role">
+                        <option value="observer" {% if user and user.role == 'observer' %}selected{% endif %}>Observateur</option>
+                        <option value="controller" {% if user and user.role == 'controller' %}selected{% endif %}>Contrôleur</option>
+                        <option value="billing" {% if user and user.role == 'billing' %}selected{% endif %}>Facturation</option>
+                        <option value="auditor" {% if user and user.role == 'auditor' %}selected{% endif %}>Auditeur</option>
+                        <option value="supervisor" {% if user and user.role == 'supervisor' %}selected{% endif %}>Superviseur</option>
+                        <option value="superadmin" {% if user and user.role == 'superadmin' %}selected{% endif %}>SuperAdmin</option>
+                    </select>
+                </div>
+            </div>
+            
+            {% if user %}
+            <div class="mb-6">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %}
+                           class="w-5 h-5 rounded border-dark-100 bg-dark-300 text-primary-500 focus:ring-primary-500">
+                    <span class="text-gray-300">Compte actif</span>
+                </label>
+            </div>
+            {% endif %}
+            
+            <div class="flex items-center gap-4">
+                <button type="submit" class="flex-1 py-3 px-4 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-500 transition-colors" data-testid="btn-save">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if user %}Enregistrer{% else %}Créer{% endif %}
+                </button>
+                <a href="{{ url_for('admin.users') }}" class="flex-1 py-3 px-4 bg-dark-300 text-gray-300 hover:text-white text-center rounded-lg transition-colors">
+                    Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

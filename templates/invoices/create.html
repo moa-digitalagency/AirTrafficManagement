@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle Facture - ATM-RDC{% endblock %}
+{% block page_title %}Créer une Facture{% endblock %}
+{% block page_subtitle %}Génération automatique{% endblock %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('invoices.create') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+                <h3 class="font-semibold text-white mb-4">
+                    <i class="fas fa-building mr-2 text-primary-400"></i>
+                    Informations Client
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Compagnie Aérienne *</label>
+                        <select name="airline_id" required
+                                class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                data-testid="select-airline">
+                            <option value="">Sélectionner une compagnie</option>
+                            {% for airline in airlines %}
+                            <option value="{{ airline.id }}">{{ airline.name }} ({{ airline.iata_code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Type de Facture</label>
+                        <select name="invoice_type"
+                                class="w-full px-4 py-3 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                data-testid="select-type">
+                            <option value="standard">Standard</option>
+                            <option value="overflight">Survol uniquement</option>
+                            <option value="landing">Atterrissage uniquement</option>
+                            <option value="combined">Combinée</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+                <h3 class="font-semibold text-white mb-4">
+                    <i class="fas fa-route mr-2 text-purple-400"></i>
+                    Survols Non Facturés
+                </h3>
+                
+                <div class="space-y-3 max-h-64 overflow-y-auto">
+                    {% for ovf in overflights %}
+                    <label class="flex items-center gap-4 p-3 bg-dark-300 rounded-lg cursor-pointer hover:bg-dark-200 transition-colors">
+                        <input type="checkbox" name="overflights" value="{{ ovf.id }}"
+                               class="w-5 h-5 rounded border-dark-100 bg-dark-200 text-primary-500 focus:ring-primary-500">
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium text-white">{{ ovf.session_id }}</span>
+                                <span class="text-sm text-gray-400">{{ (ovf.distance_km or 0)|round(1) }} km</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">
+                                {{ ovf.exit_time.strftime('%d/%m/%Y %H:%M') if ovf.exit_time else '-' }} • 
+                                Durée: {{ ((ovf.duration_minutes or 0) / 60)|int }}h {{ ((ovf.duration_minutes or 0) % 60)|int }}m
+                            </p>
+                        </div>
+                    </label>
+                    {% else %}
+                    <p class="text-center py-4 text-gray-400">Aucun survol non facturé</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+                <h3 class="font-semibold text-white mb-4">
+                    <i class="fas fa-plane-arrival mr-2 text-green-400"></i>
+                    Atterrissages Non Facturés
+                </h3>
+                
+                <div class="space-y-3 max-h-64 overflow-y-auto">
+                    {% for land in landings %}
+                    <label class="flex items-center gap-4 p-3 bg-dark-300 rounded-lg cursor-pointer hover:bg-dark-200 transition-colors">
+                        <input type="checkbox" name="landings" value="{{ land.id }}"
+                               class="w-5 h-5 rounded border-dark-100 bg-dark-200 text-primary-500 focus:ring-primary-500">
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium text-white">{{ land.airport_icao }}</span>
+                                <span class="text-sm text-gray-400">{{ ((land.parking_duration_minutes or 0) / 60)|round(1) }}h stationnement</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">
+                                {{ land.landing_time.strftime('%d/%m/%Y %H:%M') if land.landing_time else '-' }}
+                                {% if land.is_night %}<span class="text-yellow-400 ml-2">Vol de nuit</span>{% endif %}
+                            </p>
+                        </div>
+                    </label>
+                    {% else %}
+                    <p class="text-center py-4 text-gray-400">Aucun atterrissage non facturé</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+                <h3 class="font-semibold text-white mb-4">
+                    <i class="fas fa-calculator mr-2 text-primary-400"></i>
+                    Résumé
+                </h3>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">Survols sélectionnés</span>
+                        <span class="text-white font-medium" id="selected-overflights">0</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">Atterrissages sélectionnés</span>
+                        <span class="text-white font-medium" id="selected-landings">0</span>
+                    </div>
+                    <hr class="border-dark-100 my-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Estimation</span>
+                        <span class="text-white font-bold text-lg" id="estimated-total">0.00 USD</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+                <h3 class="font-semibold text-white mb-4">
+                    <i class="fas fa-info-circle mr-2 text-primary-400"></i>
+                    Tarifs Actuels
+                </h3>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Survol par km</span>
+                        <span class="text-white">0.85 USD</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Atterrissage base</span>
+                        <span class="text-white">150.00 USD</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Stationnement/h</span>
+                        <span class="text-white">25.00 USD</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">TVA</span>
+                        <span class="text-white">16%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-semibold rounded-lg transition-all" data-testid="btn-create">
+                <i class="fas fa-file-invoice mr-2"></i>
+                Créer la Facture
+            </button>
+            
+            <a href="{{ url_for('invoices.index') }}" class="block w-full py-3 px-4 bg-dark-300 text-gray-300 hover:text-white text-center rounded-lg transition-colors">
+                Annuler
+            </a>
+        </div>
+    </div>
+</form>
+
+<script>
+    function updateSummary() {
+        const overflights = document.querySelectorAll('input[name="overflights"]:checked').length;
+        const landings = document.querySelectorAll('input[name="landings"]:checked').length;
+        
+        document.getElementById('selected-overflights').textContent = overflights;
+        document.getElementById('selected-landings').textContent = landings;
+        
+        const estimate = (overflights * 1000 * 0.85) + (landings * 150);
+        const total = estimate * 1.16;
+        document.getElementById('estimated-total').textContent = total.toFixed(2) + ' USD';
+    }
+    
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', updateSummary);
+    });
+</script>
+{% endblock %}

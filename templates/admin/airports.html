@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Aéroports - ATM-RDC{% endblock %}
+{% block page_title %}Aéroports{% endblock %}
+{% block page_subtitle %}Infrastructure aéroportuaire{% endblock %}
+
+{% block content %}
+<div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+    <div class="p-4 border-b border-dark-100">
+        <h3 class="font-semibold text-white">
+            <i class="fas fa-tower-broadcast mr-2 text-primary-400"></i>
+            Liste des Aéroports
+        </h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-dark-300">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Aéroport</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Codes</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Ville</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Pays</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Coordonnées</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Statut</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-dark-100">
+                {% for airport in airports %}
+                <tr class="hover:bg-dark-300/50 transition-colors">
+                    <td class="px-4 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg {% if airport.is_domestic %}bg-primary-500/20{% else %}bg-purple-500/20{% endif %} flex items-center justify-center">
+                                <i class="fas fa-{% if airport.is_domestic %}tower-broadcast{% else %}globe{% endif %} {% if airport.is_domestic %}text-primary-400{% else %}text-purple-400{% endif %}"></i>
+                            </div>
+                            <span class="font-medium text-white">{{ airport.name }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-4">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-500/20 text-primary-400 mr-1">
+                            {{ airport.icao_code }}
+                        </span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-500/20 text-gray-400">
+                            {{ airport.iata_code or '-' }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-4 text-white">{{ airport.city or '-' }}</td>
+                    <td class="px-4 py-4 text-gray-400">{{ airport.country or '-' }}</td>
+                    <td class="px-4 py-4 text-gray-400 text-sm">
+                        {{ "%.4f"|format(airport.latitude or 0) }}, {{ "%.4f"|format(airport.longitude or 0) }}
+                    </td>
+                    <td class="px-4 py-4">
+                        {% if airport.status == 'open' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                            <span class="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                            Ouvert
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400">
+                            <span class="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                            Fermé
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-400">
+                        Aucun aéroport enregistré
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

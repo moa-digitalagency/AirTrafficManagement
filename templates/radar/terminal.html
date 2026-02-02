@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Terminal - ATM-RDC{% endblock %}
+{% block page_title %}Radar Aéroportuaire{% endblock %}
+{% block page_subtitle %}Gestion des mouvements au sol{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+            <div class="p-4 border-b border-dark-100 flex items-center justify-between">
+                <h3 class="font-semibold text-white">
+                    <i class="fas fa-plane-arrival mr-2 text-green-400"></i>
+                    Arrivées Prévues
+                </h3>
+                <span class="px-2.5 py-1 bg-green-500/20 text-green-400 rounded-full text-sm">
+                    {{ inbound|length }} vols
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-dark-300">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Vol</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Origine</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Destination</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">ETA</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-100">
+                        {% for flight in inbound %}
+                        <tr class="hover:bg-dark-300/50 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                        <i class="fas fa-plane-arrival text-green-400 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-white">{{ flight.callsign }}</p>
+                                        <p class="text-xs text-gray-400">{{ flight.flight_number or '-' }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-white">{{ flight.departure_icao or '???' }}</td>
+                            <td class="px-4 py-3 text-white">{{ flight.arrival_icao or '???' }}</td>
+                            <td class="px-4 py-3 text-white">
+                                {{ flight.scheduled_arrival.strftime('%H:%M') if flight.scheduled_arrival else '--:--' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if flight.flight_status == 'approaching' %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
+                                    <span class="w-1.5 h-1.5 bg-yellow-400 rounded-full status-dot"></span>
+                                    Approche
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                                    <span class="w-1.5 h-1.5 bg-green-400 rounded-full status-dot"></span>
+                                    En route
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-gray-400">
+                                <i class="fas fa-plane-slash text-3xl mb-2 opacity-50"></i>
+                                <p>Aucune arrivée prévue</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+            <div class="p-4 border-b border-dark-100 flex items-center justify-between">
+                <h3 class="font-semibold text-white">
+                    <i class="fas fa-parking mr-2 text-blue-400"></i>
+                    Aéronefs au Sol
+                </h3>
+                <span class="px-2.5 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
+                    {{ on_ground|length }} aéronefs
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-dark-300">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Vol</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Aéroport</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Arrivée</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Stationnement</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-dark-100">
+                        {% for flight in on_ground %}
+                        <tr class="hover:bg-dark-300/50 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                        <i class="fas fa-plane text-blue-400 text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-white">{{ flight.callsign }}</p>
+                                        <p class="text-xs text-gray-400">{{ flight.flight_number or '-' }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-white">{{ flight.arrival_icao or '???' }}</td>
+                            <td class="px-4 py-3 text-white">
+                                {{ flight.actual_arrival.strftime('%H:%M') if flight.actual_arrival else '--:--' }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
+                                    <i class="fas fa-clock"></i>
+                                    En stationnement
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+                                <i class="fas fa-parking text-3xl mb-2 opacity-50"></i>
+                                <p>Aucun aéronef au sol</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="space-y-6">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
+            <h4 class="font-semibold text-white mb-4">
+                <i class="fas fa-tower-broadcast mr-2 text-primary-400"></i>
+                Aéroports RDC
+            </h4>
+            
+            <div class="space-y-3">
+                {% for airport in airports %}
+                <div class="p-3 bg-dark-300 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-primary-500/20 flex items-center justify-center">
+                            <span class="text-primary-400 font-bold text-sm">{{ airport.icao_code[:2] }}</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-white text-sm">{{ airport.icao_code }}</p>
+                            <p class="text-xs text-gray-400">{{ airport.city }}</p>
+                        </div>
+                    </div>
+                    <span class="w-2.5 h-2.5 rounded-full {% if airport.status == 'open' %}bg-green-400{% else %}bg-red-400{% endif %}"></span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
+            <h4 class="font-semibold text-white mb-4">
+                <i class="fas fa-chart-pie mr-2 text-primary-400"></i>
+                Résumé du Jour
+            </h4>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Arrivées</span>
+                    <span class="font-medium text-white">{{ inbound|length }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Au sol</span>
+                    <span class="font-medium text-white">{{ on_ground|length }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Départs prévus</span>
+                    <span class="font-medium text-white">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
