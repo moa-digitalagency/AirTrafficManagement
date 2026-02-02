@@ -20,17 +20,21 @@ mock_db = MagicMock()
 mock_flight = MagicMock()
 mock_flight_pos = MagicMock()
 mock_overflight = MagicMock()
+mock_landing = MagicMock()
 mock_models_module.db = mock_db
 mock_models_module.Flight = mock_flight
 mock_models_module.FlightPosition = mock_flight_pos
 mock_models_module.Overflight = mock_overflight
+mock_models_module.Landing = mock_landing
 
 mock_fetch_data = MagicMock()
 mock_services_module.fetch_external_flight_data = mock_fetch_data
 
 mock_is_point_in_rdc = MagicMock()
+mock_check_landing_events = MagicMock()
 mock_flight_tracker_module.is_point_in_rdc = mock_is_point_in_rdc
 mock_flight_tracker_module.get_rdc_boundary = MagicMock()
+mock_flight_tracker_module.check_landing_events = mock_check_landing_events
 
 # Mock celery decorator
 def mock_task_decorator(*args, **kwargs):
@@ -60,9 +64,10 @@ class TestFlightTasksLogic(unittest.TestCase):
         if 'tasks.flight_tasks' in sys.modules:
             del sys.modules['tasks.flight_tasks']
 
-        from tasks.flight_tasks import fetch_flight_positions, check_airspace_entries
+        from tasks.flight_tasks import fetch_flight_positions, check_airspace_entries, check_airport_movements
         self.fetch_flight_positions = fetch_flight_positions
         self.check_airspace_entries = check_airspace_entries
+        self.check_airport_movements = check_airport_movements
 
         # Reset mocks
         mock_app.reset_mock()
@@ -70,8 +75,10 @@ class TestFlightTasksLogic(unittest.TestCase):
         mock_flight.reset_mock()
         mock_flight_pos.reset_mock()
         mock_overflight.reset_mock()
+        mock_landing.reset_mock()
         mock_fetch_data.reset_mock()
         mock_is_point_in_rdc.reset_mock()
+        mock_check_landing_events.reset_mock()
 
         # Setup app context mock
         mock_app.app_context.return_value.__enter__.return_value = None
@@ -182,6 +189,54 @@ class TestFlightTasksLogic(unittest.TestCase):
         # The code uses overflight_map.get(flight.id)
         # If there was a query inside loop it would look like Overflight.query.filter_by(...)
         self.assertFalse(mock_overflight.query.filter_by.called)
+
+    def test_check_airport_movements(self):
+        # Setup flights
+        f1 = MagicMock(id=1, callsign='F1', current_latitude=1, current_longitude=1, current_altitude=1000, current_speed=100)
+        f2 = MagicMock(id=2, callsign='F2', current_latitude=2, current_longitude=2, current_altitude=2000, current_speed=200)
+
+        mock_flight.query.filter.return_value.all.return_value = [f1, f2]
+
+        # Setup existing landings
+        l2 = MagicMock(flight_id=2, status='approach', created_at=100)
+        mock_landing.query.filter.return_value.all.return_value = [l2]
+
+        # Setup check_landing_events return values
+        # For F1: New landing
+        landing_res1 = MagicMock(status='approach', airport_icao='FZAA')
+        # For F2: Updated landing
+        landing_res2 = MagicMock(status='landed', airport_icao='FZAA')
+
+        mock_check_landing_events.side_effect = [landing_res1, landing_res2]
+
+        # Call task
+        mock_self = MagicMock()
+        result = self.check_airport_movements(mock_self)
+
+        # Verify
+        # 1. Landing query called ONCE (optimization)
+        self.assertTrue(mock_landing.query.filter.called)
+
+        # 2. check_landing_events called for both
+        self.assertEqual(mock_check_landing_events.call_count, 2)
+
+        # 3. Check arguments passed to check_landing_events
+        # Call 1 (F1): active_landing should be None, skip_db_lookup=True
+        args1, kwargs1 = mock_check_landing_events.call_args_list[0]
+        self.assertEqual(kwargs1.get('active_landing'), None)
+        self.assertEqual(kwargs1.get('skip_db_lookup'), True)
+
+        # Call 2 (F2): active_landing should be l2, skip_db_lookup=True
+        args2, kwargs2 = mock_check_landing_events.call_args_list[1]
+        self.assertEqual(kwargs2.get('active_landing'), l2)
+        self.assertEqual(kwargs2.get('skip_db_lookup'), True)
+
+        # 4. Result check
+        self.assertEqual(len(result['movements']), 2)
+        self.assertEqual(result['movements'][0]['callsign'], 'F1')
+        self.assertEqual(result['movements'][0]['status'], 'approach')
+        self.assertEqual(result['movements'][1]['callsign'], 'F2')
+        self.assertEqual(result['movements'][1]['status'], 'landed')
 
 if __name__ == '__main__':
     unittest.main()

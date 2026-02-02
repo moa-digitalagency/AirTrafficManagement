@@ -391,7 +391,7 @@ def get_cached_rdc_airports():
     return _fetch_rdc_airports_from_db()
 
 
-def check_landing_events(flight_id, lat, lon, alt, speed):
+def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, skip_db_lookup=False):
     """
     Check for landing and parking events
     """
@@ -415,10 +415,13 @@ def check_landing_events(flight_id, lat, lon, alt, speed):
         return None
 
     # Check for active landing session (not completed)
-    landing = Landing.query.filter(
-        Landing.flight_id == flight_id,
-        Landing.status != 'completed'
-    ).order_by(Landing.created_at.desc()).first()
+    if skip_db_lookup:
+        landing = active_landing
+    else:
+        landing = Landing.query.filter(
+            Landing.flight_id == flight_id,
+            Landing.status != 'completed'
+        ).order_by(Landing.created_at.desc()).first()
 
     # Airport elevation in meters (approx)
     airport_elev_m = (nearest_airport.get('elevation_ft') or 0) * 0.3048

@@ -22,9 +22,13 @@ def fetch_flight_positions(self):
             flights_data = fetch_external_flight_data()
             
             # Optimization: Batch fetch flights to avoid N+1 queries
-            callsigns = [fd.get('callsign') for fd in flights_data if fd.get('callsign')]
-            flights = Flight.query.filter(Flight.callsign.in_(callsigns)).all()
-            flight_map = {f.callsign: f for f in flights}
+            # Use set to deduplicate callsigns and avoid redundant work
+            callsigns = list(set(fd.get('callsign') for fd in flights_data if fd.get('callsign')))
+
+            flight_map = {}
+            if callsigns:
+                flights = Flight.query.filter(Flight.callsign.in_(callsigns)).all()
+                flight_map = {f.callsign: f for f in flights}
 
             for flight_data in flights_data:
                 flight = flight_map.get(flight_data.get('callsign'))
@@ -168,7 +172,7 @@ def check_airport_movements(self):
     """
     try:
         from app import app
-        from models import db, Flight
+        from models import db, Flight, Landing
         from services.flight_tracker import check_landing_events
 
         with app.app_context():
@@ -178,18 +182,34 @@ def check_airport_movements(self):
                 Flight.flight_status.in_(['in_flight', 'approaching', 'on_ground'])
             ).all()
 
+            # Optimization: Pre-fetch active landings to avoid N+1 queries
+            flight_ids = [f.id for f in active_flights]
+            active_landings = Landing.query.filter(
+                Landing.flight_id.in_(flight_ids),
+                Landing.status != 'completed'
+            ).all()
+
+            landing_map = {}
+            for l in active_landings:
+                # Store the latest active landing for each flight
+                if l.flight_id not in landing_map or l.created_at > landing_map[l.flight_id].created_at:
+                    landing_map[l.flight_id] = l
+
             movements = []
 
             for flight in active_flights:
                 if flight.current_latitude is None or flight.current_longitude is None:
                     continue
 
+                active_landing = landing_map.get(flight.id)
                 landing = check_landing_events(
                     flight.id,
                     flight.current_latitude,
                     flight.current_longitude,
                     flight.current_altitude,
-                    flight.current_speed
+                    flight.current_speed,
+                    active_landing=active_landing,
+                    skip_db_lookup=True
                 )
 
                 if landing:
