@@ -373,6 +373,24 @@ def get_tariff_value(code, default=0.0):
         return default
 
 
+def _fetch_rdc_airports_from_db():
+    """Fetch RDC airports as a list of dicts to be cache-friendly"""
+    airports = Airport.query.filter_by(country='RDC').all()
+    return [{
+        'latitude': a.latitude,
+        'longitude': a.longitude,
+        'elevation_ft': a.elevation_ft,
+        'icao_code': a.icao_code,
+        'name': a.name
+    } for a in airports]
+
+
+@lru_cache(maxsize=1)
+def get_cached_rdc_airports():
+    """Cached version of RDC airports fetch"""
+    return _fetch_rdc_airports_from_db()
+
+
 def check_landing_events(flight_id, lat, lon, alt, speed):
     """
     Check for landing and parking events
@@ -381,14 +399,14 @@ def check_landing_events(flight_id, lat, lon, alt, speed):
     if not flight:
         return None
 
-    # Get RDC airports
-    airports = Airport.query.filter_by(country='RDC').all()
+    # Get RDC airports (cached)
+    airports = get_cached_rdc_airports()
 
     nearest_airport = None
     min_dist = float('inf')
 
     for airport in airports:
-        dist = calculate_distance(lat, lon, airport.latitude, airport.longitude)
+        dist = calculate_distance(lat, lon, airport['latitude'], airport['longitude'])
         if dist < min_dist:
             min_dist = dist
             nearest_airport = airport
@@ -403,7 +421,7 @@ def check_landing_events(flight_id, lat, lon, alt, speed):
     ).order_by(Landing.created_at.desc()).first()
 
     # Airport elevation in meters (approx)
-    airport_elev_m = (nearest_airport.elevation_ft or 0) * 0.3048
+    airport_elev_m = (nearest_airport.get('elevation_ft') or 0) * 0.3048
     alt_agl = (alt or 0) * 0.3048 - airport_elev_m # Altitude Above Ground Level (meters)
     speed_knots = speed or 0
 
@@ -419,8 +437,8 @@ def check_landing_events(flight_id, lat, lon, alt, speed):
                 airline_id=flight.airline_id,
                 callsign=flight.callsign,
                 registration=flight.aircraft.registration if flight.aircraft else None,
-                airport_icao=nearest_airport.icao_code,
-                airport_name=nearest_airport.name,
+                airport_icao=nearest_airport['icao_code'],
+                airport_name=nearest_airport['name'],
                 approach_time=current_time,
                 status='approach',
                 is_domestic=flight.is_domestic
