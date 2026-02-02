@@ -3,8 +3,9 @@ Flight-related Celery tasks for ATM-RDC
 Handles asynchronous flight position fetching and overflight detection
 """
 import os
-from celery_app import celery
 from datetime import datetime
+from celery_app import celery
+
 
 @celery.task(bind=True, max_retries=3)
 def fetch_flight_positions(self):
@@ -13,25 +14,36 @@ def fetch_flight_positions(self):
     This task runs every 5 seconds via Celery Beat
     """
     try:
-        from app import create_app
+        from app import app
         from models import db, Flight, FlightPosition
-        from services.flight_tracker import fetch_external_flight_data
+        from services.api_client import fetch_external_flight_data
         
-        app = create_app()
         with app.app_context():
             flights_data = fetch_external_flight_data()
             
             for flight_data in flights_data:
-                position = FlightPosition(
-                    flight_id=flight_data.get('flight_id'),
-                    latitude=flight_data.get('latitude'),
-                    longitude=flight_data.get('longitude'),
-                    altitude=flight_data.get('altitude'),
-                    heading=flight_data.get('heading'),
-                    speed=flight_data.get('speed'),
-                    timestamp=datetime.utcnow()
-                )
-                db.session.add(position)
+                flight = Flight.query.filter_by(
+                    callsign=flight_data.get('callsign')
+                ).first()
+                
+                if flight:
+                    position = FlightPosition(
+                        flight_id=flight.id,
+                        latitude=flight_data.get('latitude'),
+                        longitude=flight_data.get('longitude'),
+                        altitude=flight_data.get('altitude'),
+                        heading=flight_data.get('heading'),
+                        ground_speed=flight_data.get('ground_speed'),
+                        timestamp=datetime.utcnow()
+                    )
+                    db.session.add(position)
+                    
+                    flight.current_latitude = flight_data.get('latitude')
+                    flight.current_longitude = flight_data.get('longitude')
+                    flight.current_altitude = flight_data.get('altitude')
+                    flight.current_heading = flight_data.get('heading')
+                    flight.current_speed = flight_data.get('ground_speed')
+                    flight.last_position_update = datetime.utcnow()
             
             db.session.commit()
             return {'status': 'success', 'positions_updated': len(flights_data)}
@@ -44,28 +56,28 @@ def fetch_flight_positions(self):
 def check_airspace_entries(self):
     """
     Check for aircraft entering or exiting RDC airspace
-    Uses PostGIS for geofencing calculations
+    Uses Shapely for geofencing calculations
     """
     try:
-        from app import create_app
+        from app import app
         from models import db, Flight, Overflight
-        from services.flight_tracker import check_rdc_airspace, get_rdc_boundary
+        from services.flight_tracker import is_point_in_rdc, get_rdc_boundary
         
-        app = create_app()
         with app.app_context():
             active_flights = Flight.query.filter(
                 Flight.flight_status.in_(['in_flight', 'approaching'])
             ).all()
             
-            rdc_boundary = get_rdc_boundary()
             entries = []
             exits = []
             
             for flight in active_flights:
-                is_in_rdc = check_rdc_airspace(
+                if not flight.current_latitude or not flight.current_longitude:
+                    continue
+                
+                is_in_rdc = is_point_in_rdc(
                     flight.current_latitude, 
-                    flight.current_longitude,
-                    rdc_boundary
+                    flight.current_longitude
                 )
                 
                 existing_overflight = Overflight.query.filter_by(
@@ -74,10 +86,16 @@ def check_airspace_entries(self):
                 ).first()
                 
                 if is_in_rdc and not existing_overflight:
+                    from uuid import uuid4
+                    session_id = f"OVF-{datetime.now().strftime('%Y%m%d')}-{uuid4().hex[:8].upper()}"
+                    
                     overflight = Overflight(
+                        session_id=session_id,
                         flight_id=flight.id,
-                        entry_point_lat=flight.current_latitude,
-                        entry_point_lon=flight.current_longitude,
+                        aircraft_id=flight.aircraft_id,
+                        entry_lat=flight.current_latitude,
+                        entry_lon=flight.current_longitude,
+                        entry_alt=flight.current_altitude,
                         entry_time=datetime.utcnow(),
                         status='active'
                     )
@@ -85,10 +103,16 @@ def check_airspace_entries(self):
                     entries.append(flight.callsign)
                     
                 elif not is_in_rdc and existing_overflight:
-                    existing_overflight.exit_point_lat = flight.current_latitude
-                    existing_overflight.exit_point_lon = flight.current_longitude
+                    existing_overflight.exit_lat = flight.current_latitude
+                    existing_overflight.exit_lon = flight.current_longitude
+                    existing_overflight.exit_alt = flight.current_altitude
                     existing_overflight.exit_time = datetime.utcnow()
                     existing_overflight.status = 'completed'
+                    
+                    if existing_overflight.entry_time:
+                        duration = (existing_overflight.exit_time - existing_overflight.entry_time).total_seconds() / 60
+                        existing_overflight.duration_minutes = duration
+                    
                     exits.append(flight.callsign)
             
             db.session.commit()
@@ -107,10 +131,9 @@ def process_flight_data(flight_data: dict):
     """
     Process incoming flight data from external API
     """
-    from app import create_app
-    from models import db, Flight, Aircraft
+    from app import app
+    from models import db, Flight
     
-    app = create_app()
     with app.app_context():
         flight = Flight.query.filter_by(callsign=flight_data.get('callsign')).first()
         

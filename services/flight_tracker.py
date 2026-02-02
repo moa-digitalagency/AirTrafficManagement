@@ -6,8 +6,10 @@ Air Traffic Management - RDC
 from datetime import datetime
 import random
 import math
+import os
 
 from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight
+from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
 
 RDC_BOUNDARY = {
     "type": "Feature",
@@ -247,3 +249,29 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     
     return R * c
+
+
+def get_weather_tile_url(layer: str = 'clouds_new') -> str:
+    """
+    Get weather overlay tile URL for Leaflet map
+    Available layers: clouds_new, precipitation_new, pressure_new, wind_new, temp_new
+    """
+    return openweathermap.get_weather_tile_url(layer)
+
+
+def get_airport_metar(icao_code: str) -> dict:
+    """Get METAR data for an airport"""
+    return aviationweather.get_metar(icao_code) or {}
+
+
+def get_airport_weather(icao_code: str) -> dict:
+    """Get weather conditions for an airport"""
+    airport = Airport.query.filter_by(icao_code=icao_code).first()
+    if airport:
+        return openweathermap.get_weather_at_point(airport.latitude, airport.longitude) or {}
+    return {}
+
+
+def check_rdc_airspace(lat: float, lon: float, boundary: dict = None) -> bool:
+    """Check if a point is within RDC airspace"""
+    return is_point_in_rdc(lat, lon)

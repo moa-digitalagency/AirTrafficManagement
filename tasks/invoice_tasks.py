@@ -2,8 +2,9 @@
 Invoice-related Celery tasks for ATM-RDC
 Handles asynchronous invoice generation and processing
 """
-from celery_app import celery
 from datetime import datetime, timedelta
+from celery_app import celery
+
 
 @celery.task(bind=True, max_retries=3)
 def generate_pending_invoices(self):
@@ -12,11 +13,10 @@ def generate_pending_invoices(self):
     This task runs hourly via Celery Beat
     """
     try:
-        from app import create_app
-        from models import db, Overflight, Landing, Invoice, Tariff
-        from services.invoice_generator import generate_invoice
+        from app import app
+        from models import db, Overflight, Landing, Invoice
+        from services.invoice_generator import generate_overflight_invoice, generate_landing_invoice
         
-        app = create_app()
         with app.app_context():
             uninvoiced_overflights = Overflight.query.filter_by(
                 status='completed',
@@ -30,19 +30,13 @@ def generate_pending_invoices(self):
             invoices_generated = []
             
             for overflight in uninvoiced_overflights:
-                invoice = generate_invoice(
-                    invoice_type='overflight',
-                    reference_id=overflight.id
-                )
+                invoice = generate_overflight_invoice(overflight.id)
                 if invoice:
                     overflight.is_invoiced = True
                     invoices_generated.append(invoice.invoice_number)
             
             for landing in uninvoiced_landings:
-                invoice = generate_invoice(
-                    invoice_type='landing',
-                    reference_id=landing.id
-                )
+                invoice = generate_landing_invoice(landing.id)
                 if invoice:
                     landing.is_invoiced = True
                     invoices_generated.append(invoice.invoice_number)
@@ -62,15 +56,16 @@ def generate_single_invoice(invoice_type: str, reference_id: int):
     """
     Generate a single invoice on demand
     """
-    from app import create_app
-    from services.invoice_generator import generate_invoice
+    from app import app
+    from services.invoice_generator import generate_overflight_invoice, generate_landing_invoice
     
-    app = create_app()
     with app.app_context():
-        invoice = generate_invoice(
-            invoice_type=invoice_type,
-            reference_id=reference_id
-        )
+        if invoice_type == 'overflight':
+            invoice = generate_overflight_invoice(reference_id)
+        elif invoice_type == 'landing':
+            invoice = generate_landing_invoice(reference_id)
+        else:
+            return {'status': 'failed', 'reason': 'Invalid invoice type'}
         
         if invoice:
             return {
@@ -87,10 +82,9 @@ def send_invoice_notification(invoice_id: int):
     """
     Send notification for a generated invoice
     """
-    from app import create_app
-    from models import db, Invoice, Airline
+    from app import app
+    from models import db, Invoice
     
-    app = create_app()
     with app.app_context():
         invoice = Invoice.query.get(invoice_id)
         

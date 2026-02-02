@@ -1,9 +1,13 @@
 from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
 from datetime import datetime
+import os
 
 from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Alert
-from services.flight_tracker import get_active_flights, get_rdc_boundary
+from services.flight_tracker import (
+    get_active_flights, get_rdc_boundary, get_weather_tile_url,
+    get_airport_metar, get_airport_weather
+)
 
 radar_bp = Blueprint('radar', __name__)
 
@@ -82,3 +86,34 @@ def acknowledge_alert(alert_id):
     alert.acknowledged_at = datetime.utcnow()
     db.session.commit()
     return jsonify({'success': True})
+
+
+@radar_bp.route('/api/weather/tiles')
+@login_required
+def api_weather_tiles():
+    """Get weather tile layer URLs for map overlay"""
+    api_key = os.environ.get('OPENWEATHERMAP_API_KEY', '')
+    if not api_key:
+        return jsonify({'configured': False, 'layers': {}})
+    
+    layers = {
+        'clouds': get_weather_tile_url('clouds_new'),
+        'precipitation': get_weather_tile_url('precipitation_new'),
+        'pressure': get_weather_tile_url('pressure_new'),
+        'wind': get_weather_tile_url('wind_new'),
+        'temperature': get_weather_tile_url('temp_new')
+    }
+    return jsonify({'configured': True, 'layers': layers})
+
+
+@radar_bp.route('/api/weather/airport/<icao_code>')
+@login_required
+def api_airport_weather(icao_code):
+    """Get weather and METAR for a specific airport"""
+    weather = get_airport_weather(icao_code)
+    metar = get_airport_metar(icao_code)
+    return jsonify({
+        'icao': icao_code,
+        'weather': weather,
+        'metar': metar
+    })
