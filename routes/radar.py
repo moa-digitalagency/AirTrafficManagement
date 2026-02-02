@@ -12,7 +12,8 @@ radar_bp = Blueprint('radar', __name__)
 @login_required
 def index():
     airports = Airport.query.filter_by(is_domestic=True).all()
-    return render_template('radar/index.html', airports=airports)
+    airports_data = [a.to_dict() for a in airports]
+    return render_template('radar/index.html', airports=airports_data)
 
 
 @radar_bp.route('/overflights')

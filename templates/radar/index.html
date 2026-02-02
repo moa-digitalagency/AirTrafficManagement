@@ -170,7 +170,7 @@
     let airportsLayer;
     let flights = [];
     
-    const airports = {{ airports | map(attribute='to_dict') | list | tojson | safe }};
+    const airports = {{ airports | tojson | safe }};
     
     function initMap() {
         map = L.map('radar-map', {
