@@ -8,7 +8,7 @@ import random
 import math
 import os
 
-from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight
+from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
 
 RDC_BOUNDARY = {
@@ -355,6 +355,116 @@ def check_overflight_exit(flight_id, lat, lon, alt):
     db.session.commit()
     
     return overflight
+
+
+def get_tariff_value(code, default=0.0):
+    """Get tariff value from DB or return default"""
+    try:
+        tariff = TariffConfig.query.filter_by(code=code).first()
+        return tariff.value if tariff else default
+    except:
+        return default
+
+
+def check_landing_events(flight_id, lat, lon, alt, speed):
+    """
+    Check for landing and parking events
+    """
+    flight = Flight.query.get(flight_id)
+    if not flight:
+        return None
+
+    # Get RDC airports
+    airports = Airport.query.filter_by(country='RDC').all()
+
+    nearest_airport = None
+    min_dist = float('inf')
+
+    for airport in airports:
+        dist = calculate_distance(lat, lon, airport.latitude, airport.longitude)
+        if dist < min_dist:
+            min_dist = dist
+            nearest_airport = airport
+
+    if not nearest_airport or min_dist > 50: # Check within 50km
+        return None
+
+    # Check for active landing session (not completed)
+    landing = Landing.query.filter(
+        Landing.flight_id == flight_id,
+        Landing.status != 'completed'
+    ).order_by(Landing.created_at.desc()).first()
+
+    # Airport elevation in meters (approx)
+    airport_elev_m = (nearest_airport.elevation_ft or 0) * 0.3048
+    alt_agl = (alt or 0) * 0.3048 - airport_elev_m # Altitude Above Ground Level (meters)
+    speed_knots = speed or 0
+
+    current_time = datetime.utcnow()
+
+    # Create new landing session if approaching
+    if not landing:
+        # If within 20km and altitude < 3000m (approx 10000ft) -> Approaching
+        if min_dist < 20 and alt_agl < 3000:
+            landing = Landing(
+                flight_id=flight_id,
+                aircraft_id=flight.aircraft_id,
+                airline_id=flight.airline_id,
+                callsign=flight.callsign,
+                registration=flight.aircraft.registration if flight.aircraft else None,
+                airport_icao=nearest_airport.icao_code,
+                airport_name=nearest_airport.name,
+                approach_time=current_time,
+                status='approach',
+                is_domestic=flight.is_domestic
+            )
+            db.session.add(landing)
+            db.session.commit()
+            return landing
+
+    else:
+        # Update existing landing session
+
+        # State: approach -> landed (Touchdown)
+        # Logic: Low altitude (< 100m) and low speed (< 150 kts) near airport (< 5km)
+        if landing.status == 'approach':
+            if min_dist < 5 and alt_agl < 100 and speed_knots < 180:
+                landing.status = 'landed'
+                landing.touchdown_time = current_time
+                landing.landing_fee = get_tariff_value('LANDING_BASE', 150.0)
+                db.session.commit()
+                return landing
+
+        # State: landed -> parking (Taxi/Parking)
+        # Logic: Speed < 5 knots
+        elif landing.status == 'landed':
+            if speed_knots < 5:
+                landing.status = 'parking'
+                landing.parking_start = current_time
+                db.session.commit()
+                return landing
+
+        # State: parking -> completed (Pushback/Departure)
+        # Logic: Speed > 10 knots (started moving again) OR left airport area
+        elif landing.status == 'parking':
+            if speed_knots > 10 or min_dist > 5:
+                landing.status = 'completed'
+                landing.parking_end = current_time
+
+                if landing.parking_start:
+                    duration = (landing.parking_end - landing.parking_start).total_seconds() / 60
+                    landing.parking_duration_minutes = duration
+
+                    # Calculate fee (1 hour free, then X$/h)
+                    billable_hours = max(0, (duration - 60) / 60)
+                    rate = get_tariff_value('PARKING_HOUR', 25.0)
+                    landing.parking_fee = billable_hours * rate
+
+                landing.total_fee = (landing.landing_fee or 0) + (landing.parking_fee or 0)
+                db.session.commit()
+                return landing
+
+    return None
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
