@@ -6,11 +6,13 @@ ATM-RDC is a comprehensive web-based air traffic management system developed for
 
 ## Technology Stack
 
-- **Backend**: Python 3.11+ / Flask with SQLAlchemy ORM
-- **Database**: PostgreSQL with PostGIS extensions
-- **Real-time**: Flask-SocketIO for WebSocket communication
-- **Frontend**: HTML5 / Tailwind CSS / Leaflet.js for mapping
-- **PDF Generation**: ReportLab for invoice generation
+- **Backend**: Python 3.11+ with Flask Framework
+- **Async Processing**: Celery + Redis (for processing API data flows without blocking the UI)
+- **WebSockets**: Flask-SocketIO (for real-time radar data push to browser)
+- **Database**: PostgreSQL 15+ with PostGIS extension (for geospatial calculations)
+- **Frontend**: HTML5 / JavaScript ES6 Modules / Tailwind CSS
+- **Mapping**: Leaflet.js (open source cartographic engine)
+- **PDF Generation**: ReportLab
 
 ## Project Structure
 
@@ -36,23 +38,37 @@ ATM-RDC is a comprehensive web-based air traffic management system developed for
 │   ├── flight_tracker.py    # Real-time flight tracking
 │   └── invoice_generator.py # PDF invoice generation
 ├── statics/          # Static files (CSS, JS, images)
+├── tasks/            # Celery async tasks
+│   ├── flight_tasks.py      # Flight position fetching
+│   └── invoice_tasks.py     # Invoice generation tasks
 ├── templates/        # Jinja2 HTML templates
 ├── utils/            # Utility modules
 │   ├── decorators.py # Role-based access decorators
 │   └── helpers.py    # Helper functions
 ├── app.py            # Main Flask application
+├── celery_app.py     # Celery configuration
 ├── init_db.py        # Database initialization script
 └── python_requirements.txt # Python dependencies
 ```
 
 ## Running the Application
 
-The application runs via the workflow which executes:
+The application runs via the workflow:
 ```bash
-npm run dev  # This spawns: python app.py
+npm run dev  # Executes: python app.py
 ```
 
 The Flask server runs on `http://0.0.0.0:5000`
+
+### Starting Celery Worker (for async tasks)
+```bash
+celery -A celery_app worker --loglevel=info
+```
+
+### Starting Celery Beat (for scheduled tasks)
+```bash
+celery -A celery_app beat --loglevel=info
+```
 
 ## Database Initialization
 
@@ -60,6 +76,18 @@ Run the database initialization script to create tables and seed data:
 ```bash
 python init_db.py
 ```
+
+## Environment Variables
+
+Configure these in your `.env` file or Replit Secrets:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes (auto-configured) |
+| `SESSION_SECRET` | Flask session secret key | Yes |
+| `REDIS_URL` | Redis connection for Celery | Optional |
+| `FLIGHT_API_KEY` | External flight data API key | Optional |
+| `FLIGHT_API_URL` | External flight data API URL | Optional |
 
 ## Default User Accounts
 
@@ -71,6 +99,8 @@ python init_db.py
 | billing | password123 | Billing |
 | auditor | password123 | Auditor |
 
+**Note:** Change these default passwords in production!
+
 ## Key Features
 
 ### 1. Live Radar (`/radar`)
@@ -81,7 +111,7 @@ python init_db.py
 
 ### 2. Overflight Tracking (`/radar/overflights`)
 - Automatic detection of aircraft entering RDC airspace
-- Geofencing using Shapely library
+- Geofencing using Shapely/PostGIS for "Point in Polygon" calculations
 - Entry/exit point recording with timestamps
 - Distance and duration calculation
 
@@ -123,17 +153,24 @@ python init_db.py
 - `GET /radar/api/flights` - Active flights
 - `GET /radar/api/boundary` - RDC boundary GeoJSON
 - `GET /radar/api/alerts` - Active alerts
+- `GET /radar/api/airports` - Domestic airports
 
 ### Flights API
 - `GET /api/flights` - List flights
 - `GET /api/flights/<id>` - Flight details
 - `GET /api/overflights` - Overflight sessions
 
-## Environment Variables
+## Celery Tasks
 
-- `DATABASE_URL` - PostgreSQL connection string (auto-configured)
-- `SESSION_SECRET` - Flask session secret key
-- `PORT` - Server port (default: 5000)
+### Periodic Tasks (via Celery Beat)
+- `fetch_flight_positions` - Every 5 seconds
+- `check_airspace_entries` - Every 10 seconds
+- `generate_pending_invoices` - Every hour
+
+### On-demand Tasks
+- `process_flight_data` - Process incoming flight data
+- `generate_single_invoice` - Generate specific invoice
+- `send_invoice_notification` - Send invoice notification
 
 ## Recent Changes
 
@@ -141,5 +178,6 @@ python init_db.py
   - Full Python/Flask backend implementation
   - PostgreSQL database with all models
   - Real-time radar with Leaflet.js
-  - Automated billing system
+  - Automated billing system with PDF generation
   - RBAC with audit logging
+  - Celery + Redis integration for async processing
