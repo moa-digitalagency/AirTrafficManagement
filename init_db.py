@@ -14,9 +14,11 @@ import random
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask
+from sqlalchemy import text
 from models import (db, User, Aircraft, Airport, Airline, TariffConfig, Flight, 
                     Overflight, Landing, Alert, FlightPosition, FlightRoute, 
-                    Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog)
+                    Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog,
+                    Airspace)
 
 
 def create_app():
@@ -37,10 +39,39 @@ def init_database():
         print("1. Suppression des tables existantes...")
         db.drop_all()
         
-        print("2. Création des tables...")
+        print("2. Activation de PostGIS...")
+        try:
+            db.session.execute(text('CREATE EXTENSION IF NOT EXISTS postgis'))
+            db.session.commit()
+            print("   - Extension PostGIS activée.")
+        except Exception as e:
+            print(f"   - Erreur activation PostGIS (peut-être déjà active ou droits insuffisants): {e}")
+            db.session.rollback()
+
+        print("3. Création des tables...")
         db.create_all()
         
-        print("3. Insertion des données initiales...\n")
+        print("4. Insertion des données initiales...\n")
+
+        print("   - Configuration de l'espace aérien (RDC Boundary)...")
+        # Coordonnées du polygone RDC (simplifié pour démo)
+        rdc_coords = [
+            (12.2, -5.9), (12.5, -4.6), (13.1, -4.5), (14.0, -4.4), (15.8, -4.0),
+            (16.2, -2.0), (16.5, -1.0), (17.8, -0.5), (18.5, 2.0), (19.5, 3.0),
+            (21.0, 4.0), (24.0, 5.5), (27.4, 5.0), (28.0, 4.5), (29.0, 4.3),
+            (29.5, 3.0), (29.8, 1.5), (29.6, -1.0), (29.2, -1.5), (29.0, -2.8),
+            (29.5, -4.5), (29.0, -6.0), (30.5, -8.0), (30.0, -10.0), (28.5, -11.0),
+            (27.5, -12.0), (25.0, -12.5), (22.0, -13.0), (21.5, -12.0), (20.0, -11.0),
+            (18.0, -9.5), (16.0, -8.0), (13.0, -6.5), (12.2, -5.9)
+        ]
+        rdc_wkt = f"MULTIPOLYGON((({', '.join([f'{lon} {lat}' for lon, lat in rdc_coords])})))"
+
+        rdc_airspace = Airspace(
+            name='RDC Airspace',
+            type='boundary',
+            geom=rdc_wkt
+        )
+        db.session.add(rdc_airspace)
         
         print("   - Création des utilisateurs...")
         users = [
