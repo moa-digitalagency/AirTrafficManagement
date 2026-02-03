@@ -14,9 +14,16 @@ class TestLandingLogic(unittest.TestCase):
     @patch('services.flight_tracker.Flight')
     @patch('services.flight_tracker.Airport')
     @patch('services.flight_tracker.Landing')
+    @patch('services.flight_tracker.Overflight')
     @patch('services.flight_tracker.TariffConfig')
+    @patch('services.notification_service.NotificationService')
+    @patch('services.flight_tracker.trigger_auto_invoice')
+    @patch('services.flight_tracker.t')
     @patch('services.flight_tracker.db')
-    def test_landing_sequence(self, mock_db, mock_tariff_config, mock_landing_model, mock_airport_model, mock_flight_model):
+    def test_landing_sequence(self, mock_db, mock_t, mock_auto_invoice, mock_notification, mock_tariff_config, mock_overflight_model, mock_landing_model, mock_airport_model, mock_flight_model):
+        # Setup t
+        mock_t.side_effect = lambda key, **kwargs: key
+
         # Setup Tariff
         mock_tariff = MagicMock()
         mock_tariff.value = 100.0
@@ -66,7 +73,11 @@ class TestLandingLogic(unittest.TestCase):
         # Setup existing landing as 'approach'
         existing_landing = MagicMock()
         existing_landing.status = 'approach'
+        existing_landing.airport_icao = 'FZAA' # needed for notification
         mock_landing_model.query.filter.return_value.order_by.return_value.first.return_value = existing_landing
+
+        # Mock Overflight
+        mock_overflight_model.query.filter_by.return_value.first.return_value = None
 
         # Aircraft very close (lat/lon of airport), low altitude (50ft AGL), low speed (130kts)
         landing = check_landing_events(1, airport.latitude, airport.longitude, 1076, 130)

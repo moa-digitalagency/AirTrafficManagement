@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration - ATM-RDC{% endblock %}
-{% block page_title %}Configuration{% endblock %}
-{% block page_subtitle %}Paramètres du système{% endblock %}
+{% block title %}{{ t('settings.title') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('settings.title') }}{% endblock %}
+{% block page_subtitle %}{{ t('settings.subtitle') }}{% endblock %}
 
 {% block content %}
 <!-- Macro for rendering fields -->
@@ -23,8 +23,8 @@
     <div class="md:col-span-2">
         {% if config.value_type == 'bool' %}
         <select name="{{ config.key }}" id="{{ config.key }}" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
-            <option value="true" {% if config.get_typed_value() == True %}selected{% endif %}>Oui</option>
-            <option value="false" {% if config.get_typed_value() == False %}selected{% endif %}>Non</option>
+            <option value="true" {% if config.get_typed_value() == True %}selected{% endif %}>{{ t('settings.yes') }}</option>
+            <option value="false" {% if config.get_typed_value() == False %}selected{% endif %}>{{ t('settings.no') }}</option>
         </select>
         {% elif config.value_type == 'file' %}
             {% if config.value %}
@@ -41,16 +41,16 @@
                     <option value="{{ tz }}" {% if config.value == tz %}selected{% endif %}>{{ tz }}</option>
                     {% endfor %}
                 {% elif config.key == 'unit_altitude' %}
-                    <option value="ft" {% if config.value == 'ft' %}selected{% endif %}>Pieds (ft)</option>
-                    <option value="m" {% if config.value == 'm' %}selected{% endif %}>Mètres (m)</option>
+                    <option value="ft" {% if config.value == 'ft' %}selected{% endif %}>{{ t('settings.units_ft') }}</option>
+                    <option value="m" {% if config.value == 'm' %}selected{% endif %}>{{ t('settings.units_m') }}</option>
                 {% elif config.key == 'unit_speed' %}
-                    <option value="kts" {% if config.value == 'kts' %}selected{% endif %}>Nœuds (kts)</option>
-                    <option value="km/h" {% if config.value == 'km/h' %}selected{% endif %}>Kilomètres/heure (km/h)</option>
-                    <option value="mach" {% if config.value == 'mach' %}selected{% endif %}>Mach</option>
+                    <option value="kts" {% if config.value == 'kts' %}selected{% endif %}>{{ t('settings.units_kts') }}</option>
+                    <option value="km/h" {% if config.value == 'km/h' %}selected{% endif %}>{{ t('settings.units_kmh') }}</option>
+                    <option value="mach" {% if config.value == 'mach' %}selected{% endif %}>{{ t('settings.units_mach') }}</option>
                 {% elif config.key == 'invoice_currency' %}
-                    <option value="USD" {% if config.value == 'USD' %}selected{% endif %}>USD ($)</option>
-                    <option value="EUR" {% if config.value == 'EUR' %}selected{% endif %}>EUR (€)</option>
-                    <option value="CDF" {% if config.value == 'CDF' %}selected{% endif %}>CDF (FC)</option>
+                    <option value="USD" {% if config.value == 'USD' %}selected{% endif %}>{{ t('settings.units_usd') }}</option>
+                    <option value="EUR" {% if config.value == 'EUR' %}selected{% endif %}>{{ t('settings.units_eur') }}</option>
+                    <option value="CDF" {% if config.value == 'CDF' %}selected{% endif %}>{{ t('settings.units_cdf') }}</option>
                 {% else %}
                     <option value="{{ config.value }}" selected>{{ config.value }}</option>
                 {% endif %}
@@ -73,22 +73,22 @@
     <div class="p-6 border-b border-dark-100 flex justify-between items-center flex-wrap gap-4">
         <h3 class="font-semibold text-white">
             <i class="fas fa-cogs mr-2 text-primary-400"></i>
-            Paramètres Généraux
+            {{ t('settings.title') }}
         </h3>
 
         <!-- Tabs Header -->
         <div class="flex space-x-2">
             <button type="button" data-tab-target="#general" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary-600 text-white">
-                Général
+                {{ t('settings.general') }}
             </button>
             <button type="button" data-tab-target="#billing" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-dark-300 text-gray-400 hover:bg-dark-200">
-                Facturation
+                {{ t('settings.billing') }}
             </button>
             <button type="button" data-tab-target="#units" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-dark-300 text-gray-400 hover:bg-dark-200">
-                Unités & Affichage
+                {{ t('settings.units') }}
             </button>
             <button type="button" data-tab-target="#system" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-dark-300 text-gray-400 hover:bg-dark-200">
-                Système
+                {{ t('settings.system') }}
             </button>
         </div>
     </div>
@@ -98,7 +98,7 @@
 
         <!-- Tab: General -->
         <div id="general" class="tab-content space-y-6">
-            <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Paramètres Système & Branding</h4>
+            <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">{{ t('settings.general') }}</h4>
             {% for config in configs %}
                 {% if config.category in ['branding', 'system'] and config.key != 'timezone' %}
                     {{ render_config_field(config, timezones) }}
@@ -108,9 +108,9 @@
 
         <!-- Tab: Billing -->
         <div id="billing" class="tab-content space-y-6" style="display: none;">
-            <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Configuration de la Facturation</h4>
+            <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">{{ t('settings.billing') }}</h4>
             <div class="grid grid-cols-1 gap-6 mb-6">
-                 <p class="text-sm text-gray-400">Définissez ici les éléments visuels et les règles de facturation.</p>
+                 <p class="text-sm text-gray-400">{{ t('settings.billing') }}</p>
             </div>
 
             {% for config in configs %}
@@ -122,7 +122,7 @@
 
         <!-- Tab: Units -->
         <div id="units" class="tab-content space-y-6" style="display: none;">
-             <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Unités de Mesure & Affichage</h4>
+             <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">{{ t('settings.units') }}</h4>
             {% for config in configs %}
                 {% if config.category == 'display' %}
                     {{ render_config_field(config, timezones) }}
@@ -132,17 +132,17 @@
 
         <!-- Tab: System -->
         <div id="system" class="tab-content space-y-6" style="display: none;">
-             <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">Configuration Système Avancée</h4>
+             <h4 class="text-lg font-medium text-white mb-4 border-b border-gray-700 pb-2">{{ t('settings.system') }}</h4>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start border-b border-dark-100 pb-6">
                 <div class="md:col-span-1">
-                    <label class="block text-sm font-medium text-white mb-1">Espace Aérien</label>
-                    <p class="text-xs text-gray-500 font-mono">Configuration Géographique</p>
+                    <label class="block text-sm font-medium text-white mb-1">{{ t('settings.airspace_label') }}</label>
+                    <p class="text-xs text-gray-500 font-mono">{{ t('settings.airspace_config') }}</p>
                 </div>
                 <div class="md:col-span-2">
                      <a href="{{ url_for('admin.airspace_map') }}" class="inline-flex px-4 py-2 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition-colors text-sm items-center">
                         <i class="fas fa-map-marked-alt mr-2"></i>
-                        Définir Espace Aérien (Carte)
+                        {{ t('settings.define_airspace') }}
                     </a>
                 </div>
             </div>
@@ -165,7 +165,7 @@
         <div class="mt-8 flex justify-end border-t border-dark-100 pt-6">
             <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center gap-2">
                 <i class="fas fa-save"></i>
-                Enregistrer les modifications
+                {{ t('settings.save') }}
             </button>
         </div>
         {% endif %}

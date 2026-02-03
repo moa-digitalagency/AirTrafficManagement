@@ -86,7 +86,7 @@ def calculate_overflight_cost(ovf):
     """
     # Check exemption
     if ovf.flight and ovf.flight.airline and ovf.flight.airline.exempt_overflight_fees:
-        return 0.0, "Exempted", "0.00 USD"
+        return 0.0, t('invoice_gen.exempted'), "0.00 USD"
 
     mode = get_billing_mode()
 
@@ -278,7 +278,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     content.append(Spacer(1, 0.5*cm))
     
     if invoice.airline:
-        content.append(Paragraph("<b>Client:</b>", styles['Normal']))
+        content.append(Paragraph(f"<b>{t('invoice_gen.client')}:</b>", styles['Normal']))
         content.append(Paragraph(f"{invoice.airline.name}", styles['Normal']))
         if invoice.airline.address:
             content.append(Paragraph(f"{invoice.airline.address}", styles['Normal']))
@@ -286,10 +286,10 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
             content.append(Paragraph(f"Email: {invoice.airline.email}", styles['Normal']))
         content.append(Spacer(1, 0.5*cm))
     
-    content.append(Paragraph("<b>Détails des services</b>", styles['Heading2']))
+    content.append(Paragraph(f"<b>{t('invoice_gen.details')}</b>", styles['Heading2']))
     content.append(Spacer(1, 0.3*cm))
     
-    items_data = [['Description', 'Quantité', 'Prix Unitaire', 'Total']]
+    items_data = [[t('invoices.description'), t('invoices.quantity'), t('invoices.unit_price'), t('invoices.total')]]
     
     landing_base = get_tariff('LANDING_BASE')
     
@@ -298,7 +298,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         cost, desc, unit_desc = calculate_overflight_cost(ovf)
 
         items_data.append([
-            f'Survol {ovf.session_id}',
+            t('invoice_gen.desc_overflight').format(session=ovf.session_id),
             desc,
             unit_desc,
             f'{cost:.2f} USD'
@@ -307,7 +307,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     landings = Landing.query.filter_by(invoice_id=invoice.id).all()
     for land in landings:
         items_data.append([
-            f'Atterrissage {land.airport_icao}',
+            t('invoice_gen.desc_landing').format(airport=land.airport_icao),
             '1',
             f'{landing_base:.2f} USD',
             f'{landing_base:.2f} USD'
@@ -328,10 +328,15 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     content.append(items_table)
     content.append(Spacer(1, 0.5*cm))
     
+    tva_rate = get_tariff('TVA_RATE') or 16.0
+    # tva_rate is returned as value, e.g. 16.0. But calculate_invoice_amounts does /100.
+    # get_tariff returns the value directly.
+    # In calculate_invoice_amounts: tva_rate = get_tariff('TVA_RATE') / 100
+
     totals_data = [
-        ['', '', 'Sous-total:', f'{invoice.subtotal:.2f} USD'],
-        ['', '', 'TVA (16%):', f'{invoice.tax_amount:.2f} USD'],
-        ['', '', 'TOTAL:', f'{invoice.total_amount:.2f} USD'],
+        ['', '', f"{t('invoices.subtotal')}:", f'{invoice.subtotal:.2f} USD'],
+        ['', '', f"{t('invoices.tax')} ({int(tva_rate)}%):", f'{invoice.tax_amount:.2f} USD'],
+        ['', '', f"{t('invoices.total')}:", f'{invoice.total_amount:.2f} USD'],
     ]
     
     totals_table = Table(totals_data, colWidths=[8*cm, 3*cm, 3*cm, 3*cm])
@@ -358,7 +363,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         content.append(Spacer(1, 0.2*cm))
 
     if footer_banks:
-         content.append(Paragraph("<b>Coordonnées Bancaires:</b>", footer_style))
+         content.append(Paragraph(f"<b>{t('invoice_gen.bank_details')}:</b>", footer_style))
          content.append(Paragraph(footer_banks.replace('\n', '<br/>'), footer_style))
          content.append(Spacer(1, 0.2*cm))
 
@@ -373,7 +378,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     gen_time = datetime.now().strftime("%d/%m/%Y %H:%M")
     gen_user = generated_by_user.username if generated_by_user else (f"User #{invoice.created_by}" if invoice.created_by else "Système")
     content.append(Spacer(1, 0.2*cm))
-    content.append(Paragraph(f"Généré le {gen_time} par {gen_user}", footer_style))
+    content.append(Paragraph(t('invoice_gen.generated_by').format(date=gen_time, user=gen_user), footer_style))
 
     doc.build(content)
     
@@ -465,7 +470,7 @@ def trigger_auto_invoice(flight_id):
         total_amount=amounts['total'],
         status='draft',
         due_date=datetime.now().date(),
-        notes=f"Facture automatique pour vol {flight.callsign}",
+        notes=t('invoice_gen.auto_note').format(callsign=flight.callsign),
         created_by=None # System
     )
 

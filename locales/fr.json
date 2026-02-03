@@ -287,5 +287,63 @@
         "squawk_7700": "Urgence Générale (7700)",
         "squawk_7600": "Panne Radio (7600)",
         "squawk_7500": "Détournement (7500)"
+    },
+
+    "settings": {
+        "title": "Configuration",
+        "subtitle": "Paramètres du système",
+        "general": "Général",
+        "billing": "Facturation",
+        "units": "Unités & Affichage",
+        "system": "Système",
+        "save": "Enregistrer les modifications",
+        "yes": "Oui",
+        "no": "Non",
+        "define_airspace": "Définir Espace Aérien (Carte)",
+        "airspace_config": "Configuration Géographique",
+        "airspace_label": "Espace Aérien",
+        "units_ft": "Pieds (ft)",
+        "units_m": "Mètres (m)",
+        "units_kts": "Nœuds (kts)",
+        "units_kmh": "Kilomètres/heure (km/h)",
+        "units_mach": "Mach",
+        "units_usd": "USD ($)",
+        "units_eur": "EUR (€)",
+        "units_cdf": "CDF (FC)"
+    },
+
+    "map": {
+        "title": "Configuration Espace Aérien",
+        "subtitle": "Définition de la zone de surveillance (RDC)",
+        "interactive_title": "Carte Interactive",
+        "instructions": "Utilisez les outils de dessin pour définir les limites de l'espace aérien. Double-cliquez pour terminer un polygone.",
+        "back": "Retour",
+        "save": "Sauvegarder",
+        "alert_draw": "Veuillez dessiner une zone avant de sauvegarder.",
+        "alert_multiple": "Attention: Plusieurs zones détectées. Seule la première ou une fusion sera sauvegardée. Continuer?",
+        "success": "Configuration sauvegardée avec succès!",
+        "error": "Erreur lors de la sauvegarde: ",
+        "error_server": "Erreur de communication avec le serveur."
+    },
+
+    "invoice_gen": {
+        "exempted": "Exempté",
+        "client": "Client",
+        "details": "Détails des services",
+        "bank_details": "Coordonnées Bancaires",
+        "generated_by": "Généré le {date} par {user}",
+        "auto_note": "Facture automatique pour vol {callsign}",
+        "desc_overflight": "Survol {session}",
+        "desc_landing": "Atterrissage {airport}",
+        "parking_fee": "Frais de stationnement"
+    },
+
+    "notifications": {
+        "overflight_end_title": "Survol terminé: {callsign}",
+        "overflight_end_msg": "Le vol {callsign} a quitté l'espace aérien. Prêt à facturer.",
+        "landing_title": "Atterrissage: {callsign}",
+        "landing_msg": "Atterrissage détecté à {airport}. Facturation atterrissage applicable.",
+        "parking_end_title": "Parking terminé: {callsign}",
+        "parking_end_msg": "Parking terminé à {airport}. Durée: {duration} min."
     }
 }

@@ -287,5 +287,63 @@
         "squawk_7700": "General Emergency (7700)",
         "squawk_7600": "Radio Failure (7600)",
         "squawk_7500": "Hijacking (7500)"
+    },
+
+    "settings": {
+        "title": "Settings",
+        "subtitle": "System Settings",
+        "general": "General",
+        "billing": "Billing",
+        "units": "Units & Display",
+        "system": "System",
+        "save": "Save Changes",
+        "yes": "Yes",
+        "no": "No",
+        "define_airspace": "Define Airspace (Map)",
+        "airspace_config": "Geographic Configuration",
+        "airspace_label": "Airspace",
+        "units_ft": "Feet (ft)",
+        "units_m": "Meters (m)",
+        "units_kts": "Knots (kts)",
+        "units_kmh": "Kilometers/hour (km/h)",
+        "units_mach": "Mach",
+        "units_usd": "USD ($)",
+        "units_eur": "EUR (€)",
+        "units_cdf": "CDF (FC)"
+    },
+
+    "map": {
+        "title": "Airspace Configuration",
+        "subtitle": "Surveillance Zone Definition (DRC)",
+        "interactive_title": "Interactive Map",
+        "instructions": "Use drawing tools to define airspace limits. Double-click to finish a polygon.",
+        "back": "Back",
+        "save": "Save",
+        "alert_draw": "Please draw a zone before saving.",
+        "alert_multiple": "Warning: Multiple zones detected. Only the first one or a merger will be saved. Continue?",
+        "success": "Configuration saved successfully!",
+        "error": "Error saving: ",
+        "error_server": "Server communication error."
+    },
+
+    "invoice_gen": {
+        "exempted": "Exempted",
+        "client": "Client",
+        "details": "Service Details",
+        "bank_details": "Bank Details",
+        "generated_by": "Generated on {date} by {user}",
+        "auto_note": "Automatic invoice for flight {callsign}",
+        "desc_overflight": "Overflight {session}",
+        "desc_landing": "Landing {airport}",
+        "parking_fee": "Parking Fee"
+    },
+
+    "notifications": {
+        "overflight_end_title": "Overflight ended: {callsign}",
+        "overflight_end_msg": "Flight {callsign} left airspace. Ready to bill.",
+        "landing_title": "Landing: {callsign}",
+        "landing_msg": "Landing detected at {airport}. Landing fee applicable.",
+        "parking_end_title": "Parking ended: {callsign}",
+        "parking_end_msg": "Parking ended at {airport}. Duration: {duration} min."
     }
 }

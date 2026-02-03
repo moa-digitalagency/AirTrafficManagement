@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration Espace Aérien - ATM-RDC{% endblock %}
-{% block page_title %}Configuration Espace Aérien{% endblock %}
-{% block page_subtitle %}Définition de la zone de surveillance (RDC){% endblock %}
+{% block title %}{{ t('map.title') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('map.title') }}{% endblock %}
+{% block page_subtitle %}{{ t('map.subtitle') }}{% endblock %}
 
 {% block head %}
 <!-- Leaflet CSS -->
@@ -29,20 +29,19 @@
         <div>
             <h3 class="font-semibold text-white">
                 <i class="fas fa-map-marked-alt mr-2 text-primary-400"></i>
-                Carte Interactive
+                {{ t('map.interactive_title') }}
             </h3>
             <p class="text-sm text-gray-400 mt-1">
-                Utilisez les outils de dessin pour définir les limites de l'espace aérien.
-                Double-cliquez pour terminer un polygone.
+                {{ t('map.instructions') }}
             </p>
         </div>
         <div class="flex gap-2">
             <a href="{{ url_for('admin.settings') }}" class="px-4 py-2 bg-dark-300 text-gray-300 hover:text-white rounded-lg transition-colors">
-                Retour
+                {{ t('map.back') }}
             </a>
             <button onclick="saveAirspace()" class="px-4 py-2 bg-primary-600 text-white hover:bg-primary-500 rounded-lg transition-colors flex items-center gap-2">
                 <i class="fas fa-save"></i>
-                Sauvegarder
+                {{ t('map.save') }}
             </button>
         </div>
     </div>
@@ -60,6 +59,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 
 <script>
+    const i18n = {
+        alert_draw: "{{ t('map.alert_draw') }}",
+        alert_multiple: "{{ t('map.alert_multiple') }}",
+        success: "{{ t('map.success') }}",
+        error: "{{ t('map.error') }}",
+        error_server: "{{ t('map.error_server') }}"
+    };
+
     let map;
     let drawnItems;
     let drawControl;
@@ -151,7 +158,7 @@
         // The backend expects 'geojson' which contains 'geometry' or 'features'.
 
         if (data.features.length === 0) {
-            alert("Veuillez dessiner une zone avant de sauvegarder.");
+            alert(i18n.alert_draw);
             return;
         }
 
@@ -160,7 +167,7 @@
         // Ideally we should union them but that's complex client side.
         // Warn if multiple
         if (data.features.length > 1) {
-            if (!confirm("Attention: Plusieurs zones détectées. Seule la première ou une fusion sera sauvegardée. Continuer?")) {
+            if (!confirm(i18n.alert_multiple)) {
                 return;
             }
         }
@@ -181,13 +188,13 @@
 
             if (result.success) {
                 // Show success notification (using simple alert for now, or toast if available)
-                alert("Configuration sauvegardée avec succès!");
+                alert(i18n.success);
             } else {
-                alert("Erreur lors de la sauvegarde: " + result.message);
+                alert(i18n.error + result.message);
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("Erreur de communication avec le serveur.");
+            alert(i18n.error_server);
         }
     }
 
