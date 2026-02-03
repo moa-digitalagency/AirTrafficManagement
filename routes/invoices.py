@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date
 import os
 
-from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog
+from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog, Flight
 from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts
 from utils.decorators import role_required
 from services.translation_service import t
@@ -294,3 +294,93 @@ def generate_overflight_invoice(overflight_id):
         'invoice_id': invoice.id,
         'total': float(total)
     })
+
+
+@invoices_bp.route('/generate/flight/<int:flight_id>')
+@login_required
+@role_required(['superadmin', 'billing'])
+def generate_flight_invoice(flight_id):
+    """Generate invoice for a specific flight (including overflights and landings)"""
+    flight = Flight.query.get_or_404(flight_id)
+
+    # Check if we already have invoices for this flight
+    # We look at related overflights and landings
+    overflights = Overflight.query.filter_by(flight_id=flight_id).all()
+    landings = Landing.query.filter_by(flight_id=flight_id).all()
+
+    existing_invoice_id = None
+    all_billed = True
+
+    # Check overflights
+    unbilled_ovf_ids = []
+    for ovf in overflights:
+        if not ovf.is_billed:
+            all_billed = False
+            unbilled_ovf_ids.append(ovf.id)
+        elif ovf.invoice_id:
+            existing_invoice_id = ovf.invoice_id
+
+    # Check landings
+    unbilled_land_ids = []
+    for land in landings:
+        if not land.is_billed:
+            all_billed = False
+            unbilled_land_ids.append(land.id)
+        elif land.invoice_id:
+            existing_invoice_id = land.invoice_id
+
+    if all_billed and existing_invoice_id:
+        return redirect(url_for('invoices.detail', invoice_id=existing_invoice_id))
+
+    if not unbilled_ovf_ids and not unbilled_land_ids:
+        flash(t('invoices.no_billable_items'), 'warning')
+        if existing_invoice_id:
+             return redirect(url_for('invoices.detail', invoice_id=existing_invoice_id))
+        return redirect(url_for('flights.detail', flight_id=flight_id))
+
+    # Generate new invoice
+    amounts = calculate_invoice_amounts(unbilled_ovf_ids, unbilled_land_ids)
+
+    invoice_number = f"RVA-FLT-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
+
+    invoice = Invoice(
+        invoice_number=invoice_number,
+        airline_id=flight.airline_id,
+        invoice_type='flight',
+        subtotal=amounts['subtotal'],
+        tax_amount=amounts['tax'],
+        total_amount=amounts['total'],
+        status='draft',
+        due_date=date.today(),
+        notes=f"Vol: {flight.callsign}, Date: {flight.flight_date}",
+        created_by=current_user.id
+    )
+
+    db.session.add(invoice)
+    db.session.flush()
+
+    # Link items
+    for ovf_id in unbilled_ovf_ids:
+        ovf = Overflight.query.get(ovf_id)
+        if ovf:
+            ovf.invoice_id = invoice.id
+            ovf.is_billed = True
+
+    for land_id in unbilled_land_ids:
+        land = Landing.query.get(land_id)
+        if land:
+            land.invoice_id = invoice.id
+            land.is_billed = True
+
+    log = AuditLog(
+        user_id=current_user.id,
+        action='generate_flight_invoice',
+        entity_type='invoice',
+        entity_id=invoice.id,
+        ip_address=request.remote_addr
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    flash(t('invoices.created_success').format(number=invoice_number), 'success')
+    return redirect(url_for('invoices.detail', invoice_id=invoice.id))

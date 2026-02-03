@@ -120,8 +120,12 @@
                     </td>
                     <td class="px-4 py-4">
                         <a href="{{ url_for('flights.detail', flight_id=flight.id) }}" 
-                           class="inline-flex items-center px-3 py-1.5 bg-primary-600/20 text-primary-400 hover:bg-primary-600/30 rounded-lg text-sm transition-colors" data-testid="btn-view-{{ flight.id }}">
+                           class="inline-flex items-center px-3 py-1.5 bg-primary-600/20 text-primary-400 hover:bg-primary-600/30 rounded-lg text-sm transition-colors mr-2" data-testid="btn-view-{{ flight.id }}">
                             <i class="fas fa-eye mr-1"></i> {{ t('flights.details') }}
+                        </a>
+                        <a href="{{ url_for('invoices.generate_flight_invoice', flight_id=flight.id) }}"
+                           class="inline-flex items-center px-3 py-1.5 bg-green-600/20 text-green-400 hover:bg-green-600/30 rounded-lg text-sm transition-colors" data-testid="btn-invoice-{{ flight.id }}">
+                            <i class="fas fa-file-invoice-dollar mr-1"></i> Facture
                         </a>
                     </td>
                 </tr>

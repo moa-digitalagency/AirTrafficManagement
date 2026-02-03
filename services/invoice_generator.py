@@ -27,10 +27,49 @@ def get_tariff(code):
     return tariff.value if tariff else 0
 
 
+def get_billing_mode():
+    config = SystemConfig.query.filter_by(key='OVERFLIGHT_BILLING_MODE').first()
+    return config.value if config else 'DISTANCE'
+
+
+def calculate_overflight_cost(ovf):
+    """
+    Calculate cost for an overflight based on system configuration and airline exemptions.
+    Returns: (cost, quantity_description, unit_price_description)
+    """
+    # Check exemption
+    if ovf.flight and ovf.flight.airline and ovf.flight.airline.exempt_overflight_fees:
+        return 0.0, "Exempted", "0.00 USD"
+
+    mode = get_billing_mode()
+
+    if mode == 'TIME':
+        rate = get_tariff('SURVOL_MINUTE')
+        qty = ovf.duration_minutes or 0
+        cost = qty * rate
+        desc = f"{qty} min"
+        unit_desc = f"{rate:.2f} USD/min"
+    elif mode == 'HYBRID':
+        rate_time = get_tariff('SURVOL_HYBRID_TIME')
+        rate_dist = get_tariff('SURVOL_HYBRID_DIST')
+        qty_time = ovf.duration_minutes or 0
+        qty_dist = ovf.distance_km or 0
+        cost = (qty_time * rate_time) + (qty_dist * rate_dist)
+        desc = f"{qty_time} min / {qty_dist:.1f} km"
+        unit_desc = f"Hyb (T:{rate_time:.2f} + D:{rate_dist:.2f})"
+    else: # DISTANCE
+        rate = get_tariff('SURVOL_KM')
+        qty = ovf.distance_km or 0
+        cost = qty * rate
+        desc = f"{qty:.1f} km"
+        unit_desc = f"{rate:.2f} USD/km"
+
+    return cost, desc, unit_desc
+
+
 def calculate_invoice_amounts(overflight_ids, landing_ids):
     subtotal = 0
     
-    survol_rate = get_tariff('SURVOL_KM')
     tonnage_rate = get_tariff('TONNAGE_RATE')
     landing_base = get_tariff('LANDING_BASE')
     parking_rate = get_tariff('PARKING_HOUR')
@@ -40,13 +79,13 @@ def calculate_invoice_amounts(overflight_ids, landing_ids):
     for ovf_id in overflight_ids:
         ovf = Overflight.query.get(ovf_id)
         if ovf:
-            distance_cost = (ovf.distance_km or 0) * survol_rate
+            cost, _, _ = calculate_overflight_cost(ovf)
             
             tonnage_cost = 0
             if ovf.aircraft and ovf.aircraft.mtow:
                 tonnage_cost = (ovf.aircraft.mtow / 1000) * tonnage_rate
             
-            subtotal += distance_cost + tonnage_cost
+            subtotal += cost + tonnage_cost
     
     for land_id in landing_ids:
         land = Landing.query.get(land_id)
@@ -147,17 +186,16 @@ def generate_invoice_pdf(invoice):
     
     items_data = [['Description', 'Quantité', 'Prix Unitaire', 'Total']]
     
-    survol_rate = get_tariff('SURVOL_KM')
     landing_base = get_tariff('LANDING_BASE')
     
     overflights = Overflight.query.filter_by(invoice_id=invoice.id).all()
     for ovf in overflights:
-        distance = ovf.distance_km or 0
-        cost = distance * survol_rate
+        cost, desc, unit_desc = calculate_overflight_cost(ovf)
+
         items_data.append([
             f'Survol {ovf.session_id}',
-            f'{distance:.1f} km',
-            f'{survol_rate:.2f} USD/km',
+            desc,
+            unit_desc,
             f'{cost:.2f} USD'
         ])
     

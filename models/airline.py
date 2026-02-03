@@ -31,6 +31,7 @@ class Airline(db.Model):
     credit_limit = db.Column(db.Float, default=0)
     current_balance = db.Column(db.Float, default=0)
     is_domestic = db.Column(db.Boolean, default=False)
+    exempt_overflight_fees = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
