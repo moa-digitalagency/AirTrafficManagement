@@ -1,5 +1,7 @@
+import os
 from datetime import datetime, date
 from geoalchemy2 import Geometry
+from sqlalchemy import Text
 from .base import db
 
 class Flight(db.Model):
@@ -109,7 +111,10 @@ class FlightPosition(db.Model):
     source = db.Column(db.String(50))
 
     # PostGIS Geometry column for spatial queries
-    geom = db.Column(Geometry('POINT', srid=4326))
+    if os.environ.get('DISABLE_POSTGIS'):
+        geom = db.Column(Text)
+    else:
+        geom = db.Column(Geometry('POINT', srid=4326))
 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
 

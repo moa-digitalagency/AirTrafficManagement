@@ -6,11 +6,15 @@
 
 {% block content %}
 <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
-    <div class="p-6 border-b border-dark-100">
+    <div class="p-6 border-b border-dark-100 flex justify-between items-center">
         <h3 class="font-semibold text-white">
             <i class="fas fa-cogs mr-2 text-primary-400"></i>
             Paramètres Généraux
         </h3>
+        <a href="{{ url_for('admin.airspace_map') }}" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition-colors text-sm flex items-center">
+            <i class="fas fa-map-marked-alt mr-2"></i>
+            Définir Espace Aérien (Carte)
+        </a>
     </div>
 
     <form method="POST" class="p-6" enctype="multipart/form-data">
@@ -45,6 +49,26 @@
                         {% endif %}
                         <input type="file" name="{{ config.key }}" id="{{ config.key }}"
                                class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-600 file:text-white hover:file:bg-primary-700">
+                    {% elif config.value_type == 'select' %}
+                        <select name="{{ config.key }}" id="{{ config.key }}" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+                            {% if config.key == 'timezone' %}
+                                {% for tz in timezones %}
+                                <option value="{{ tz }}" {% if config.value == tz %}selected{% endif %}>{{ tz }}</option>
+                                {% endfor %}
+                            {% elif config.key == 'unit_altitude' %}
+                                <option value="ft" {% if config.value == 'ft' %}selected{% endif %}>Pieds (ft)</option>
+                                <option value="m" {% if config.value == 'm' %}selected{% endif %}>Mètres (m)</option>
+                            {% elif config.key == 'unit_speed' %}
+                                <option value="kts" {% if config.value == 'kts' %}selected{% endif %}>Nœuds (kts)</option>
+                                <option value="km/h" {% if config.value == 'km/h' %}selected{% endif %}>Kilomètres/heure (km/h)</option>
+                                <option value="mach" {% if config.value == 'mach' %}selected{% endif %}>Mach</option>
+                            {% else %}
+                                <option value="{{ config.value }}" selected>{{ config.value }}</option>
+                            {% endif %}
+                        </select>
+                    {% elif config.value_type == 'int' %}
+                        <input type="number" name="{{ config.key }}" id="{{ config.key }}" value="{{ config.value }}"
+                               class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
                     {% else %}
                     <input type="text" name="{{ config.key }}" id="{{ config.key }}" value="{{ config.value }}"
                            class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">

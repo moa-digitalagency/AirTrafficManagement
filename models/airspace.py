@@ -1,5 +1,7 @@
+import os
 from .base import db
 from geoalchemy2 import Geometry
+from sqlalchemy import Text
 
 class Airspace(db.Model):
     """
@@ -15,7 +17,10 @@ class Airspace(db.Model):
     max_altitude = db.Column(db.Integer, default=60000)
 
     # PostGIS Geometry column
-    geom = db.Column(Geometry('MULTIPOLYGON', srid=4326))
+    if os.environ.get('DISABLE_POSTGIS'):
+        geom = db.Column(Text)
+    else:
+        geom = db.Column(Geometry('MULTIPOLYGON', srid=4326))
 
     def to_dict(self):
         return {
