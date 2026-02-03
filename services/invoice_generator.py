@@ -14,7 +14,12 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
-from models import db, Overflight, Landing, TariffConfig, Invoice
+from models import db, Overflight, Landing, TariffConfig, Invoice, SystemConfig
+
+
+def get_contact_phone():
+    config = SystemConfig.query.filter_by(key='rva_contact_phone').first()
+    return config.value if config else "+2431234567890"
 
 
 def get_tariff(code):
@@ -207,7 +212,9 @@ def generate_invoice_pdf(invoice):
     
     content.append(Paragraph("Régie des Voies Aériennes - RDC", footer_style))
     content.append(Paragraph("Aéroport International de N'Djili - Kinshasa", footer_style))
-    content.append(Paragraph("Email: facturation@rva.cd | Tél: +243 XXX XXX XXX", footer_style))
+
+    phone = get_contact_phone()
+    content.append(Paragraph(f"Email: facturation@rva.cd | Tél: {phone}", footer_style))
     
     doc.build(content)
     

@@ -351,6 +351,18 @@ def init_database():
             db.session.add(alert)
         
         db.session.commit()
+
+        print("   - Configuration du système...")
+        sys_configs = [
+            SystemConfig(key='rva_contact_phone', value='+2431234567890',
+                         description='Numéro de téléphone de contact sur les factures',
+                         category='invoice', value_type='string', is_editable=True),
+        ]
+
+        for conf in sys_configs:
+            db.session.add(conf)
+
+        db.session.commit()
         
         print("\n=== Base de données initialisée avec succès! ===")
         print(f"\nStatistiques:")
