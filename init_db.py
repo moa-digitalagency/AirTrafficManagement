@@ -366,6 +366,18 @@ def init_database():
             SystemConfig(key='OVERFLIGHT_BILLING_MODE', value='DISTANCE',
                          description='Mode de facturation survol: DISTANCE, TIME, HYBRID',
                          category='invoice', value_type='string', is_editable=True),
+            SystemConfig(key='app_name', value='ATM-RDC',
+                         description='Nom de l\'application',
+                         category='branding', value_type='string', is_editable=True),
+            SystemConfig(key='logo_path', value='',
+                         description='Logo de l\'application',
+                         category='branding', value_type='file', is_editable=True),
+            SystemConfig(key='favicon_path', value='',
+                         description='Favicon de l\'application',
+                         category='branding', value_type='file', is_editable=True),
+            SystemConfig(key='enabled_languages', value='["fr", "en"]',
+                         description='Langues activées',
+                         category='system', value_type='json', is_editable=False),
         ]
 
         for conf in sys_configs:

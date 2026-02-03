@@ -13,7 +13,7 @@
         </h3>
     </div>
 
-    <form method="POST" class="p-6">
+    <form method="POST" class="p-6" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
         <div class="space-y-6">
@@ -37,6 +37,14 @@
                         <option value="true" {% if config.get_typed_value() == True %}selected{% endif %}>Oui</option>
                         <option value="false" {% if config.get_typed_value() == False %}selected{% endif %}>Non</option>
                     </select>
+                    {% elif config.value_type == 'file' %}
+                        {% if config.value %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename=config.value) }}" alt="{{ config.description }}" class="h-12 w-auto object-contain bg-gray-700 rounded p-1">
+                        </div>
+                        {% endif %}
+                        <input type="file" name="{{ config.key }}" id="{{ config.key }}"
+                               class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-600 file:text-white hover:file:bg-primary-700">
                     {% else %}
                     <input type="text" name="{{ config.key }}" id="{{ config.key }}" value="{{ config.value }}"
                            class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">

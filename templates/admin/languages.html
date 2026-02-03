@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('admin.languages_title') }} - {{ branding.get('app_name', t('app_name')) }}{% endblock %}
+{% block page_title %}{{ t('admin.languages_title') }}{% endblock %}
+{% block page_subtitle %}{{ t('admin.languages_title') }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- List of Languages -->
+    <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+        <div class="p-6 border-b border-dark-100">
+            <h3 class="font-semibold text-white">
+                <i class="fas fa-globe mr-2 text-primary-400"></i>
+                {{ t('admin.languages_available') }}
+            </h3>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                {% for locale in available %}
+                <div class="flex items-center justify-between p-4 bg-dark-500 rounded-lg border border-dark-100">
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg font-mono font-bold text-white uppercase">{{ locale }}</span>
+                        {% if locale in enabled %}
+                        <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">{{ t('common.enabled') }}</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-gray-700 text-gray-400 text-xs rounded-full">{{ t('common.disabled') }}</span>
+                        {% endif %}
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" name="toggle" value="{{ locale }}"
+                                class="p-2 rounded-lg transition-colors {% if locale in enabled %}bg-red-500/20 text-red-400 hover:bg-red-500/30{% else %}bg-green-500/20 text-green-400 hover:bg-green-500/30{% endif %}">
+                            <i class="fas {% if locale in enabled %}fa-toggle-on{% else %}fa-toggle-off{% endif %} text-xl"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload -->
+    <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden h-fit">
+        <div class="p-6 border-b border-dark-100">
+            <h3 class="font-semibold text-white">
+                <i class="fas fa-upload mr-2 text-primary-400"></i>
+                {{ t('admin.languages_upload') }}
+            </h3>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="p-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-400 mb-2">{{ t('admin.languages_file_label') }}</label>
+                <input type="file" name="file" accept=".json" required
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-600 file:text-white hover:file:bg-primary-700">
+                <p class="text-xs text-gray-500 mt-2">{{ t('admin.languages_file_help') }}</p>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    {{ t('admin.import') }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

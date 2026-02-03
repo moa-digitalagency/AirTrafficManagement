@@ -9,6 +9,7 @@ class TranslationService:
 
     def load_translations(self):
         """Loads all JSON files from the locales directory."""
+        self.translations = {}
         if not os.path.exists(self.locales_dir):
             return
 
@@ -20,6 +21,12 @@ class TranslationService:
                         self.translations[locale] = json.load(f)
                 except Exception as e:
                     print(f"Error loading translations for {locale}: {e}")
+
+    def reload(self):
+        self.load_translations()
+
+    def get_available_locales(self):
+        return list(self.translations.keys())
 
     def get_translation(self, key, locale='fr'):
         """

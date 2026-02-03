@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{{ t('app_subtitle') }}">
-    <title>{% block title %}{{ t('app_name') }}{% endblock %}</title>
+    <title>{% block title %}{{ branding.get('app_name', t('app_name')) }}{% endblock %}</title>
     
+    {% if branding.get('favicon_path') %}
+    <link rel="icon" href="{{ url_for('static', filename=branding.get('favicon_path')) }}">
+    {% endif %}
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -125,11 +129,15 @@
         <aside class="w-64 bg-dark-400 border-r border-dark-100 flex flex-col">
             <div class="p-4 border-b border-dark-100">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg gradient-border flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-lg gradient-border flex items-center justify-center overflow-hidden">
+                        {% if branding.get('logo_path') %}
+                        <img src="{{ url_for('static', filename=branding.get('logo_path')) }}" alt="Logo" class="w-full h-full object-cover">
+                        {% else %}
                         <i class="fas fa-plane text-white text-lg"></i>
+                        {% endif %}
                     </div>
                     <div>
-                        <h1 class="font-bold text-lg text-white">{{ t('app_name') }}</h1>
+                        <h1 class="font-bold text-lg text-white">{{ branding.get('app_name', t('app_name')) }}</h1>
                         <p class="text-xs text-gray-400">{{ t('app_title') }}</p>
                     </div>
                 </div>
@@ -190,10 +198,20 @@
                     <i class="fas fa-cogs w-5"></i>
                     <span>{{ t('nav.settings') }}</span>
                 </a>
+
+                <a href="{{ url_for('admin.languages') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.languages' in request.endpoint %}active{% endif %}" data-testid="nav-languages">
+                    <i class="fas fa-language w-5"></i>
+                    <span>{{ t('nav.languages') or 'Langues' }}</span>
+                </a>
                 
                 <a href="{{ url_for('admin.users') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.users' in request.endpoint %}active{% endif %}" data-testid="nav-users">
                     <i class="fas fa-users w-5"></i>
                     <span>{{ t('nav.users') }}</span>
+                </a>
+
+                <a href="{{ url_for('admin.roles') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.roles' in request.endpoint %}active{% endif %}" data-testid="nav-roles">
+                    <i class="fas fa-user-shield w-5"></i>
+                    <span>{{ t('nav.roles') or 'Rôles' }}</span>
                 </a>
                 
                 <a href="{{ url_for('admin.audit_logs') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'audit' in request.endpoint %}active{% endif %}" data-testid="nav-audit">
