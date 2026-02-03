@@ -19,40 +19,7 @@
     {% endif %}
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        },
-                        dark: {
-                            100: '#1e293b',
-                            200: '#1a2234',
-                            300: '#151c2c',
-                            400: '#111827',
-                            500: '#0f172a',
-                            600: '#0c1322',
-                            700: '#090f1a',
-                            800: '#060b12',
-                            900: '#03070a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/tailwind_config.js') }}"></script>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -61,73 +28,7 @@
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     
-    <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .sidebar-item:hover {
-            background: rgba(59, 130, 246, 0.1);
-        }
-        
-        .sidebar-item.active {
-            background: rgba(59, 130, 246, 0.2);
-            border-left: 3px solid #3b82f6;
-        }
-        
-        .card-glow {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
-        }
-        
-        .status-dot {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .aircraft-icon {
-            transition: transform 0.3s ease;
-        }
-        
-        .leaflet-container {
-            background: #0f172a;
-        }
-        
-        .alert-badge {
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
-        }
-        
-        .gradient-border {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        }
-        
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     
     {% block head %}{% endblock %}
 </head>
@@ -315,174 +216,14 @@
     {% endif %}
     
     <script>
-        function updateTime() {
-            const now = new Date();
-            const utc = now.toISOString().substr(11, 8);
-            const el = document.getElementById('current-time');
-            if (el) el.textContent = utc;
-        }
-        setInterval(updateTime, 1000);
-        updateTime();
-        
-        {% if current_user.is_authenticated %}
-        let lastNotificationCount = 0;
-
-        // Request browser notification permission
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
-
-        async function updateNotifications() {
-            try {
-                // Get count
-                const countRes = await fetch('/notifications/count');
-                const countData = await countRes.json();
-                const count = countData.count;
-
-                const countEl = document.getElementById('notification-count');
-                if (countEl) {
-                    countEl.textContent = count;
-                    if (count > 0) {
-                        countEl.classList.remove('hidden');
-                        countEl.classList.add('flex');
-                    } else {
-                        countEl.classList.add('hidden');
-                        countEl.classList.remove('flex');
-                    }
-                }
-
-                // If new notifications arrived, show browser notification or toast
-                if (count > lastNotificationCount) {
-                    fetchRecentNotifications();
-                }
-                lastNotificationCount = count;
-
-            } catch (e) {
-                console.error('Error fetching notifications:', e);
-            }
-        }
-
-        async function fetchRecentNotifications() {
-            try {
-                const res = await fetch('/notifications/?unread_only=true&limit=1');
-                const data = await res.json();
-                if (data.length > 0) {
-                    const notif = data[0];
-                    showToast(notif);
-
-                    // Browser notification
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification(notif.title, {
-                            body: notif.message,
-                            icon: '/static/img/logo.png' // Adjust if needed
-                        });
-                    }
-                }
-            } catch(e) {}
-        }
-
-        function showToast(notification) {
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-4 right-4 bg-dark-300 border border-dark-100 p-4 rounded-xl shadow-lg z-50 flex items-start gap-3 max-w-sm transform transition-all duration-300 translate-y-10 opacity-0';
-            toast.innerHTML = `
-                <div class="text-primary-400 mt-1"><i class="${notification.icon || 'fas fa-info-circle'}"></i></div>
-                <div class="flex-1">
-                    <h4 class="text-sm font-semibold text-white">${notification.title}</h4>
-                    <p class="text-xs text-gray-400 mt-1">${notification.message}</p>
-                </div>
-                <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
-            `;
-            document.body.appendChild(toast);
-
-            // Animate in
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-10', 'opacity-0');
-            });
-
-            // Remove after 5s
-            setTimeout(() => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
-        async function toggleNotifications() {
-            const menu = document.getElementById('notifications-menu');
-            const list = document.getElementById('notifications-list');
-            menu.classList.toggle('hidden');
-
-            if (!menu.classList.contains('hidden')) {
-                // Load notifications
-                try {
-                    const res = await fetch('/notifications/');
-                    const data = await res.json();
-
-                    if (data.length === 0) {
-                        list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Aucune notification</div>';
-                    } else {
-                        list.innerHTML = data.map(n => `
-                            <div class="p-3 border-b border-dark-100 hover:bg-dark-300 transition-colors ${n.is_read ? 'opacity-60' : ''}">
-                                <div class="flex items-start gap-3">
-                                    <div class="text-primary-400 mt-1"><i class="${n.icon || 'fas fa-info-circle'}"></i></div>
-                                    <div class="flex-1">
-                                        <h4 class="text-sm font-semibold text-white">${n.title}</h4>
-                                        <p class="text-xs text-gray-400 mt-1">${n.message}</p>
-                                        <div class="flex items-center gap-2 mt-2">
-                                            <span class="text-xs text-gray-600">${new Date(n.created_at).toLocaleString()}</span>
-                                            ${n.link ? `<a href="${n.link}" class="text-xs text-primary-400 hover:underline">Voir</a>` : ''}
-                                        </div>
-                                    </div>
-                                    ${!n.is_read ? `
-                                    <button onclick="markRead(${n.id})" class="text-xs text-primary-400" title="Marquer comme lu"><i class="fas fa-check"></i></button>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        `).join('');
-                    }
-                } catch (e) {
-                    list.innerHTML = '<div class="p-4 text-center text-red-400 text-sm">Erreur de chargement</div>';
-                }
-            }
-        }
-
-        async function markRead(id) {
-            try {
-                await fetch('/notifications/mark-read', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
-                    body: JSON.stringify({id: id})
-                });
-                toggleNotifications(); // Reload list
-                updateNotifications(); // Update count
-            } catch(e) {}
-        }
-
-        async function markAllRead() {
-            try {
-                await fetch('/notifications/mark-read', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
-                    body: JSON.stringify({id: 'all'})
-                });
-                toggleNotifications();
-                updateNotifications();
-            } catch(e) {}
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
-            const container = document.getElementById('notifications-dropdown-container');
-            const menu = document.getElementById('notifications-menu');
-            if (container && !container.contains(e.target) && !menu.classList.contains('hidden')) {
-                menu.classList.add('hidden');
-            }
-        });
-
-        setInterval(updateNotifications, 30000);
-        updateNotifications();
-        {% endif %}
+        window.baseContext = {
+            isAuthenticated: {{ 'true' if current_user.is_authenticated else 'false' }},
+            {% if current_user.is_authenticated %}
+            csrfToken: "{{ csrf_token() }}"
+            {% endif %}
+        };
     </script>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>
