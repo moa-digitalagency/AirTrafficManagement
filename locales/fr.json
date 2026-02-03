@@ -115,7 +115,10 @@
         "no_match": "Aucun vol correspondant",
         "fullscreen": "Plein écran",
         "exit_fullscreen": "Quitter plein écran",
-        "ground_speed": "Vitesse Sol"
+        "ground_speed": "Vitesse Sol",
+        "scan_effect": "Effet Radar",
+        "toggle_scan": "Scan",
+        "immersive_mode": "Immersion"
     },
 
     "flights": {

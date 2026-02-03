@@ -115,7 +115,10 @@
         "no_match": "No matching flights",
         "fullscreen": "Fullscreen",
         "exit_fullscreen": "Exit Fullscreen",
-        "ground_speed": "Ground Speed"
+        "ground_speed": "Ground Speed",
+        "scan_effect": "Radar Effect",
+        "toggle_scan": "Scan",
+        "immersive_mode": "Immersion"
     },
 
     "flights": {
