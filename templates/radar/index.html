@@ -217,14 +217,43 @@
         font-size: 9px;
         color: #94a3b8;
     }
+
+    /* Custom Tooltip */
+    .tooltip-btn {
+        position: relative;
+    }
+    .tooltip-btn::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 8px;
+        padding: 4px 8px;
+        background-color: rgba(15, 23, 42, 0.95);
+        color: white;
+        font-size: 11px;
+        border-radius: 6px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 2000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.1);
+        font-weight: 500;
+    }
+    .tooltip-btn:hover::after {
+        opacity: 1;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="flex gap-6 h-full">
     <div class="flex-1">
-        <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden relative">
-            <div class="p-4 border-b border-dark-100 flex items-center justify-between">
+        <div class="bg-dark-400 rounded-xl border border-dark-100 relative">
+            <div class="p-4 border-b border-dark-100 flex items-center justify-between relative z-20">
                 <div class="flex items-center gap-4">
                     <h3 class="font-semibold text-white">
                         <i class="fas fa-radar mr-2 text-primary-400"></i>
@@ -241,22 +270,22 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <button onclick="zoomToRDC()" class="w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" data-testid="btn-zoom-rdc" title="{{ t('radar.zoom_rdc') }}">
+                    <button onclick="zoomToRDC()" class="tooltip-btn w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" data-testid="btn-zoom-rdc" data-tooltip="{{ t('radar.zoom_rdc') }}">
                         <i class="fas fa-globe-africa"></i>
                     </button>
-                    <button onclick="toggleLayerControl()" class="w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" data-testid="btn-layers" title="{{ t('radar.layers') }}">
+                    <button onclick="toggleLayerControl()" class="tooltip-btn w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" data-testid="btn-layers" data-tooltip="{{ t('radar.layers') }}">
                         <i class="fas fa-layer-group"></i>
                     </button>
-                    <button onclick="toggleWeather()" class="w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" id="btn-weather" data-testid="btn-weather" title="{{ t('radar.weather') }}">
+                    <button onclick="toggleWeather()" class="tooltip-btn w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" id="btn-weather" data-testid="btn-weather" data-tooltip="{{ t('radar.weather') }}">
                         <i class="fas fa-cloud"></i>
                     </button>
-                    <button onclick="toggleScan()" class="w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" id="btn-scan" title="{{ t('radar.scan_effect') }}">
+                    <button onclick="toggleScan()" class="tooltip-btn w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" id="btn-scan" data-tooltip="{{ t('radar.scan_effect') }}">
                         <i class="fas fa-satellite-dish"></i>
                     </button>
-                    <button onclick="toggleFullscreen()" class="w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" id="btn-fullscreen" data-testid="btn-fullscreen" title="{{ t('radar.fullscreen') }}">
+                    <button onclick="toggleFullscreen()" class="tooltip-btn w-10 h-10 flex items-center justify-center bg-dark-300 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors" id="btn-fullscreen" data-testid="btn-fullscreen" data-tooltip="{{ t('radar.fullscreen') }}">
                         <i class="fas fa-expand"></i>
                     </button>
-                    <button onclick="refreshFlights()" class="w-10 h-10 flex items-center justify-center bg-primary-600 text-white hover:bg-primary-500 rounded-lg transition-colors" id="btn-refresh" data-testid="btn-refresh" title="{{ t('radar.refresh') }}">
+                    <button onclick="refreshFlights()" class="tooltip-btn w-10 h-10 flex items-center justify-center bg-primary-600 text-white hover:bg-primary-500 rounded-lg transition-colors" id="btn-refresh" data-testid="btn-refresh" data-tooltip="{{ t('radar.refresh') }}">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -848,12 +877,12 @@
 
         if (mapContainer.classList.contains('fullscreen')) {
             btn.innerHTML = `<i class="fas fa-compress"></i>`;
-            btn.title = i18n.exit_fullscreen;
+            btn.setAttribute('data-tooltip', i18n.exit_fullscreen);
             btn.classList.add('bg-primary-600', 'text-white', 'hover:bg-primary-500');
             btn.classList.remove('bg-dark-300', 'text-gray-300', 'hover:bg-gray-700');
         } else {
             btn.innerHTML = `<i class="fas fa-expand"></i>`;
-            btn.title = i18n.fullscreen;
+            btn.setAttribute('data-tooltip', i18n.fullscreen);
             btn.classList.remove('bg-primary-600', 'text-white', 'hover:bg-primary-500');
             btn.classList.add('bg-dark-300', 'text-gray-300', 'hover:bg-gray-700');
         }
