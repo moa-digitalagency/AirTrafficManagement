@@ -5,6 +5,7 @@ from datetime import datetime
 
 from models import db, User, AuditLog
 from services.translation_service import t
+from services.audit_service import log_audit_event
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -29,20 +30,21 @@ def login():
             login_user(user, remember=remember)
             user.last_login = datetime.utcnow()
             
-            log = AuditLog(
+            log_audit_event(
                 user_id=user.id,
-                action='login',
-                ip_address=request.remote_addr,
-                user_agent=request.user_agent.string[:500] if request.user_agent else None
+                action='login'
             )
-            db.session.add(log)
-            db.session.commit()
             
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
             return redirect(url_for('dashboard.index'))
         
+        if user:
+            log_audit_event(user_id=user.id, action='login_failed', severity='warning')
+        else:
+            log_audit_event(action='login_failed', details={'username': username}, severity='warning')
+
         flash(t('auth.invalid_credentials'), 'error')
     
     return render_template('auth/login.html')
@@ -51,14 +53,7 @@ def login():
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    log = AuditLog(
-        user_id=current_user.id,
-        action='logout',
-        ip_address=request.remote_addr,
-        user_agent=request.user_agent.string[:500] if request.user_agent else None
-    )
-    db.session.add(log)
-    db.session.commit()
+    log_audit_event(user_id=current_user.id, action='logout')
     
     logout_user()
     flash(t('auth.logout_success'), 'success')

@@ -277,8 +277,67 @@ def export_data(format_type):
 @login_required
 @role_required(['superadmin', 'billing', 'auditor'])
 def reports():
-    """Custom reports page"""
-    return render_template('analytics/reports.html')
+    """Custom reports page with filters"""
+    # Parse dates
+    end_date = date.today()
+    start_date = end_date - timedelta(days=30)
+
+    start_str = request.args.get('start_date')
+    end_str = request.args.get('end_date')
+
+    if start_str:
+        try:
+            start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    if end_str:
+        try:
+            end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    # Adjust end_date to end of day for queries
+    query_end = datetime.combine(end_date, datetime.max.time())
+    query_start = datetime.combine(start_date, datetime.min.time())
+
+    # Queries
+    overflights_count = Overflight.query.filter(
+        Overflight.created_at.between(query_start, query_end)
+    ).count()
+
+    total_revenue = db.session.query(func.sum(Invoice.total_amount)).filter(
+        Invoice.created_at.between(query_start, query_end)
+    ).scalar() or 0
+
+    flights_count = Flight.query.filter(
+        Flight.created_at.between(query_start, query_end)
+    ).count()
+
+    invoices_count = Invoice.query.filter(
+        Invoice.created_at.between(query_start, query_end)
+    ).count()
+
+    # Daily breakdown for chart
+    daily_traffic = db.session.query(
+        func.date(Overflight.created_at).label('date'),
+        func.count(Overflight.id).label('count')
+    ).filter(
+        Overflight.created_at.between(query_start, query_end)
+    ).group_by(
+        func.date(Overflight.created_at)
+    ).order_by('date').all()
+
+    traffic_data = [{'date': str(row.date), 'count': row.count} for row in daily_traffic]
+
+    return render_template('analytics/reports.html',
+                          start_date=start_date,
+                          end_date=end_date,
+                          overflights_count=overflights_count,
+                          total_revenue=total_revenue,
+                          flights_count=flights_count,
+                          invoices_count=invoices_count,
+                          traffic_data=traffic_data)
 
 
 @analytics_bp.route('/audit')
