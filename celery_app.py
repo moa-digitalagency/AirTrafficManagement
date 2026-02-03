@@ -1,4 +1,12 @@
 """
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: celery_app.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
+"""
 Celery Configuration for ATM-RDC
 Handles asynchronous task processing for flight tracking and data ingestion
 """

@@ -1,4 +1,12 @@
 """
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: decorators.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
+"""
 Décorateurs personnalisés
 Air Traffic Management - RDC
 """

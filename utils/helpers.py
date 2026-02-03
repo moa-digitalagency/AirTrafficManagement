@@ -1,4 +1,12 @@
 """
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: helpers.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
+"""
 Fonctions utilitaires
 Air Traffic Management - RDC
 """

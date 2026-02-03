@@ -1,4 +1,12 @@
 """
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: flight_tasks.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
+"""
 Flight-related Celery tasks for ATM-RDC
 Handles asynchronous flight position fetching and overflight detection
 """

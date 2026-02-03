@@ -1,6 +1,10 @@
 """
-Analytics and Business Intelligence Routes for ATM-RDC
-Provides dashboards, charts, and data export capabilities
+/* * Nom de l'application : ATM-RDC
+ * Description : Analytics and Business Intelligence Routes
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
 """
 from flask import Blueprint, render_template, jsonify, request, Response
 from flask_login import login_required, current_user
@@ -16,11 +20,18 @@ from utils.decorators import role_required
 analytics_bp = Blueprint('analytics', __name__)
 
 
+def sanitize_for_csv(value):
+    # Prevent formula injection in CSV
+    if isinstance(value, str) and value.startswith(('=', '+', '-', '@')):
+        return f"'{value}"
+    return value
+
+
 @analytics_bp.route('/')
 @login_required
 @role_required(['superadmin', 'supervisor', 'billing', 'auditor'])
 def index():
-    """Main analytics dashboard"""
+    # Main analytics dashboard
     today = date.today()
     first_of_month = today.replace(day=1)
     first_of_year = today.replace(month=1, day=1)
@@ -63,7 +74,7 @@ def index():
 @analytics_bp.route('/api/traffic/daily')
 @login_required
 def api_traffic_daily():
-    """Get daily traffic data for charts"""
+    # Get daily traffic data for charts
     days = request.args.get('days', 30, type=int)
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
@@ -84,7 +95,7 @@ def api_traffic_daily():
 @analytics_bp.route('/api/traffic/monthly')
 @login_required
 def api_traffic_monthly():
-    """Get monthly traffic data"""
+    # Get monthly traffic data
     months = request.args.get('months', 12, type=int)
     
     result = db.session.query(
@@ -108,7 +119,7 @@ def api_traffic_monthly():
 @analytics_bp.route('/api/revenue/by-airline')
 @login_required
 def api_revenue_by_airline():
-    """Get revenue breakdown by airline"""
+    # Get revenue breakdown by airline
     result = db.session.query(
         Airline.name.label('airline'),
         Airline.iata_code.label('code'),
@@ -133,7 +144,7 @@ def api_revenue_by_airline():
 @analytics_bp.route('/api/revenue/by-type')
 @login_required
 def api_revenue_by_type():
-    """Get revenue breakdown by invoice type"""
+    # Get revenue breakdown by invoice type
     result = db.session.query(
         Invoice.invoice_type.label('type'),
         func.sum(Invoice.total_amount).label('revenue'),
@@ -154,7 +165,7 @@ def api_revenue_by_type():
 @analytics_bp.route('/api/airports/traffic')
 @login_required
 def api_airports_traffic():
-    """Get traffic by airport"""
+    # Get traffic by airport
     q_arrivals = select(
         Flight.arrival_icao.label('airport'),
         func.count(Flight.id).label('arrivals'),
@@ -196,7 +207,7 @@ def api_airports_traffic():
 @login_required
 @role_required(['superadmin', 'billing', 'auditor'])
 def export_data(format_type):
-    """Export data in various formats"""
+    # Export data in various formats
     data_type = request.args.get('type', 'overflights')
     start_date_str = request.args.get('start')
     end_date_str = request.args.get('end')
@@ -261,7 +272,8 @@ def export_data(format_type):
         writer = csv.DictWriter(output, fieldnames=columns, extrasaction='ignore')
         writer.writeheader()
         for row in data:
-            writer.writerow(row)
+            sanitized_row = {k: sanitize_for_csv(v) for k, v in row.items()}
+            writer.writerow(sanitized_row)
         
         return Response(
             output.getvalue(),
@@ -277,7 +289,7 @@ def export_data(format_type):
 @login_required
 @role_required(['superadmin', 'billing', 'auditor'])
 def reports():
-    """Custom reports page with filters"""
+    # Custom reports page with filters
     # Parse dates
     end_date = date.today()
     start_date = end_date - timedelta(days=30)
@@ -402,7 +414,7 @@ def reports():
 @login_required
 @role_required(['superadmin', 'auditor'])
 def audit_logs():
-    """Audit log viewer"""
+    # Audit log viewer
     page = request.args.get('page', 1, type=int)
     action = request.args.get('action', '')
     
