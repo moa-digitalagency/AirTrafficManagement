@@ -110,7 +110,10 @@
         "heading": "Cap",
         "dep": "Dep",
         "arr": "Arr",
-        "no_match": "Aucun vol correspondant"
+        "no_match": "Aucun vol correspondant",
+        "fullscreen": "Plein écran",
+        "exit_fullscreen": "Quitter plein écran",
+        "ground_speed": "Vitesse Sol"
     },
 
     "flights": {

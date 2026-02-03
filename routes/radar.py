@@ -129,12 +129,16 @@ def api_active_overflights():
     for ovf in active:
         flight = ovf.flight
         trajectory = []
+        current_pos = None
         
         if flight:
             positions = FlightPosition.query.filter_by(
                 flight_id=flight.id
             ).order_by(FlightPosition.timestamp.desc()).limit(50).all()
             
+            if positions:
+                current_pos = positions[0]
+
             trajectory = [
                 {'lat': p.latitude, 'lon': p.longitude, 'alt': p.altitude or 0}
                 for p in reversed(positions)
@@ -155,8 +159,16 @@ def api_active_overflights():
             'trajectory': trajectory,
             'flight': {
                 'callsign': flight.callsign if flight else None,
+                'flight_number': flight.flight_number if flight else None,
                 'departure': flight.departure_icao if flight else None,
-                'arrival': flight.arrival_icao if flight else None
+                'arrival': flight.arrival_icao if flight else None,
+                'altitude': current_pos.altitude if current_pos else (ovf.entry_alt or 0),
+                'ground_speed': current_pos.ground_speed if current_pos else 0,
+                'aircraft': {
+                    'model': flight.aircraft.model if flight and flight.aircraft else None,
+                    'type': flight.aircraft.type_code if flight and flight.aircraft else None,
+                    'operator': flight.aircraft.operator if flight and flight.aircraft else None
+                } if flight else None
             } if flight else None
         })
     

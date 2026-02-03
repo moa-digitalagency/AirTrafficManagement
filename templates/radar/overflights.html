@@ -10,6 +10,26 @@
         height: 400px;
         border-radius: 12px;
         overflow: hidden;
+        transition: height 0.3s ease;
+    }
+
+    #overflight-map.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh !important;
+        z-index: 9999;
+        border-radius: 0;
+    }
+
+    .aircraft-marker {
+        background: none;
+        border: none;
+    }
+
+    .aircraft-icon {
+        transition: all 0.3s ease;
     }
     
     .trajectory-tooltip {
@@ -107,6 +127,11 @@
                 <i class="fas fa-map-marked-alt mr-2 text-primary-400"></i>
                 Trajectoires en temps réel
             </h3>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleFullscreen()" class="px-2 py-1 bg-dark-300 text-gray-300 hover:text-white rounded text-xs transition-colors" id="btn-fullscreen">
+                    <i class="fas fa-expand mr-1"></i> {{ t('radar.fullscreen') }}
+                </button>
+            </div>
             <div class="flex items-center gap-3 text-sm">
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 bg-green-400 rounded-full"></span>
@@ -324,6 +349,62 @@
         setInterval(updateDurations, 1000);
         setInterval(loadActiveTrajectories, 5000);
     }
+
+    function toggleFullscreen() {
+        const mapContainer = document.getElementById('overflight-map');
+        const btn = document.getElementById('btn-fullscreen');
+
+        mapContainer.classList.toggle('fullscreen');
+
+        if (mapContainer.classList.contains('fullscreen')) {
+            btn.innerHTML = `<i class="fas fa-compress mr-1"></i> {{ t('radar.exit_fullscreen') }}`;
+            btn.classList.add('bg-primary-600', 'text-white');
+            btn.classList.remove('bg-dark-300', 'text-gray-300');
+        } else {
+            btn.innerHTML = `<i class="fas fa-expand mr-1"></i> {{ t('radar.fullscreen') }}`;
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-dark-300', 'text-gray-300');
+        }
+
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
+    }
+
+    function getAircraftIcon(flight) {
+        const alt = flight ? (flight.altitude || 0) : 0;
+        const type = (flight && flight.aircraft && flight.aircraft.type) ? flight.aircraft.type.toUpperCase() : '';
+        const model = (flight && flight.aircraft && flight.aircraft.model) ? flight.aircraft.model.toUpperCase() : '';
+
+        const isHeli = type.includes('H') || model.includes('HELI');
+        const isJet = model.includes('B7') || model.includes('A3') || model.includes('ERJ') || model.includes('CRJ');
+        const isSmall = model.includes('C172') || model.includes('PA28') || model.includes('CESSNA');
+
+        let icon = 'fa-plane';
+        if (isHeli) icon = 'fa-helicopter';
+
+        let color = '#eab308'; // Default yellow for overflight active
+        let size = 18;
+
+        if (isHeli) size = 16;
+        else if (isSmall) size = 14;
+        else if (isJet) size = 24;
+
+        return { icon, color, size };
+    }
+
+    function calculateHeading(lat1, lon1, lat2, lon2) {
+        const toRad = (deg) => deg * Math.PI / 180;
+        const toDeg = (rad) => rad * 180 / Math.PI;
+
+        const dLon = toRad(lon2 - lon1);
+        const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+        const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+                  Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+
+        let brng = toDeg(Math.atan2(y, x));
+        return (brng + 360) % 360;
+    }
     
     async function loadBoundary() {
         try {
@@ -407,16 +488,45 @@
                 }
                 
                 if (ovf.current_lat && ovf.current_lon) {
-                    const currentMarker = L.circleMarker([ovf.current_lat, ovf.current_lon], {
-                        radius: 10,
-                        fillColor: '#eab308',
-                        color: 'white',
-                        weight: 3,
-                        fillOpacity: 1
+                    const flightData = ovf.flight || {};
+                    const { icon: iconClass, color, size } = getAircraftIcon(flightData);
+
+                    let heading = 0;
+                    if (ovf.trajectory && ovf.trajectory.length >= 2) {
+                        const last = ovf.trajectory[ovf.trajectory.length - 1];
+                        const prev = ovf.trajectory[ovf.trajectory.length - 2];
+                        heading = calculateHeading(prev.lat, prev.lon, last.lat, last.lon);
+                    }
+
+                    const icon = L.divIcon({
+                        className: 'aircraft-marker',
+                        html: `<div class="aircraft-icon" style="transform: rotate(${heading}deg); color: ${color}; font-size: ${size}px;">
+                                 <i class="fas ${iconClass}"></i>
+                               </div>`,
+                        iconSize: [size + 4, size + 4],
+                        iconAnchor: [(size + 4) / 2, (size + 4) / 2]
                     });
-                    currentMarker.bindTooltip(`<b>${ovf.session_id}</b><br>Position actuelle`, {
+
+                    const currentMarker = L.marker([ovf.current_lat, ovf.current_lon], { icon });
+
+                    const tooltipContent = `
+                        <div class="flex flex-col gap-0.5">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-white">${flightData.callsign || ovf.session_id}</span>
+                                ${flightData.flight_number ? `<span class="text-xs text-gray-300">${flightData.flight_number}</span>` : ''}
+                            </div>
+                            ${flightData.aircraft && flightData.aircraft.operator ? `<div class="text-[9px] text-blue-300 truncate max-w-[100px]">${flightData.aircraft.operator}</div>` : ''}
+                            <div class="flex items-center gap-2 text-[10px] text-gray-300">
+                                <span><i class="fas fa-tachometer-alt mr-0.5 text-green-400"></i>${Math.round(flightData.ground_speed || 0)} kts</span>
+                                <span><i class="fas fa-arrows-alt-v mr-0.5 text-yellow-400"></i>FL${Math.round((flightData.altitude || 0) / 100)}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    currentMarker.bindTooltip(tooltipContent, {
                         permanent: true,
                         direction: 'right',
+                        offset: [12, 0],
                         className: 'trajectory-tooltip'
                     });
                     currentMarker.addTo(markersLayer);
