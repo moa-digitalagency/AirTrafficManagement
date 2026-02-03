@@ -18,7 +18,7 @@
     <link rel="icon" href="{{ url_for('static', filename=branding.get('favicon_path')) }}">
     {% endif %}
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='js/tailwindcss.js') }}"></script>
     <script src="{{ url_for('static', filename='js/tailwind_config.js') }}"></script>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />

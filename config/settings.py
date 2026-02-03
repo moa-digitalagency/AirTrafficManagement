@@ -29,6 +29,8 @@ class Config:
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
     
     # ============================================
     # EXTERNAL FLIGHT DATA APIs
@@ -141,6 +143,11 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
+
+    # Enforce strict security in production
+    SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    WTF_CSRF_SSL_STRICT = True
 
     def __init__(self):
         if not self.SECRET_KEY:
