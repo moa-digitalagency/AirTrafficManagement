@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response, stream_with_context
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from sqlalchemy import func
+import json
 
 from models import db, Flight, Aircraft, Airport, Airline, Overflight, Landing, Invoice, Alert
 
@@ -176,12 +177,19 @@ def export_overflights():
     if end_date:
         query = query.filter(Overflight.exit_time <= end_date + ' 23:59:59')
     
-    overflights = query.all()
-    
-    if format_type == 'json':
-        return jsonify([o.to_dict() for o in overflights])
-    
-    return jsonify([o.to_dict() for o in overflights])
+    # Use streaming response to avoid loading all results into memory
+    def generate():
+        yield '['
+        first = True
+        # Process in batches of 100
+        for overflight in query.yield_per(100):
+            if not first:
+                yield ','
+            yield json.dumps(overflight.to_dict())
+            first = False
+        yield ']'
+
+    return Response(stream_with_context(generate()), mimetype='application/json')
 
 
 @api_bp.route('/export/landings')
