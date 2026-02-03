@@ -3,17 +3,51 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from .base import db
 
+# Association table for Role-Permission many-to-many relationship
+role_permissions = db.Table('role_permissions',
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id'), primary_key=True)
+)
+
+class Permission(db.Model):
+    """
+    Granular permissions for resources and actions
+    Format: resource:action (e.g., flights:read, invoices:create)
+    """
+    __tablename__ = 'permissions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    resource = db.Column(db.String(50), nullable=False)
+    action = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(200))
+
+    def __repr__(self):
+        return f"{self.resource}:{self.action}"
+
+class Role(db.Model):
+    """
+    User roles grouping multiple permissions
+    """
+    __tablename__ = 'roles'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(200))
+    is_system = db.Column(db.Boolean, default=False) # System roles cannot be deleted
+    permissions = db.relationship('Permission', secondary=role_permissions, lazy='subquery',
+        backref=db.backref('roles', lazy=True))
+
+    def has_permission(self, resource, action):
+        for perm in self.permissions:
+            if perm.resource == '*' and perm.action == '*':
+                return True
+            if perm.resource == resource and (perm.action == action or perm.action == '*'):
+                return True
+        return False
+
 class User(db.Model, UserMixin):
     """
     User accounts with role-based access control
-
-    Roles:
-    - superadmin: Full system access
-    - supervisor: Operations management
-    - controller: Flight tracking and monitoring
-    - billing: Invoice and tariff management
-    - auditor: Read-only access + audit logs
-    - observer: Read-only dashboard access
     """
     __tablename__ = 'users'
 
@@ -21,7 +55,14 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
+
+    # Legacy string role, kept for backward compatibility during migration
+    # but we should move to using role_id
     role = db.Column(db.String(50), default='observer', index=True)
+
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    user_role = db.relationship('Role', backref='users')
+
     first_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     phone = db.Column(db.String(50))
@@ -55,7 +96,25 @@ class User(db.Model, UserMixin):
         """Check if user has one of the specified roles"""
         if isinstance(roles, str):
             roles = [roles]
+
+        # Check against relationship first
+        if self.user_role:
+            if self.user_role.name in roles:
+                return True
+
+        # Fallback to string column
         return self.role in roles
+
+    def has_permission(self, resource, action):
+        """Check if user has specific permission"""
+        if self.user_role:
+            return self.user_role.has_permission(resource, action)
+
+        # Fallback for legacy users without role_id
+        # Map legacy roles to implicit permissions (simplified)
+        if self.role == 'superadmin':
+            return True
+        return False
 
     def to_dict(self):
         return {

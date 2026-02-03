@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{% if airline %}Modifier Compagnie{% else %}Nouvelle Compagnie{% endif %}{% endblock %}
+{% block page_title %}{% if airline %}Modifier Compagnie{% else %}Ajouter une Compagnie{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden max-w-4xl mx-auto">
+    <form method="POST" class="p-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Nom de la compagnie</label>
+                <input type="text" name="name" value="{{ airline.name if airline else '' }}" required
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Code IATA</label>
+                <input type="text" name="iata_code" value="{{ airline.iata_code if airline else '' }}" maxlength="2"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Code OACI</label>
+                <input type="text" name="icao_code" value="{{ airline.icao_code if airline else '' }}" maxlength="3"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Pays</label>
+                <input type="text" name="country" value="{{ airline.country if airline else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Email Contact</label>
+                <input type="email" name="email" value="{{ airline.email if airline else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4 flex items-center">
+                 <input type="checkbox" name="is_active" id="is_active" {% if not airline or airline.is_active %}checked{% endif %}
+                       class="form-checkbox bg-dark-600 border-dark-200 text-primary-600 rounded mr-2">
+                 <label for="is_active" class="text-sm font-medium text-white">Actif</label>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-8">
+            <a href="{{ url_for('admin.airlines') }}" class="px-6 py-2 text-gray-400 hover:text-white">Annuler</a>
+            <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors">
+                Enregistrer
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

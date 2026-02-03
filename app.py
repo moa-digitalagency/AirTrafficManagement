@@ -88,10 +88,20 @@ def create_app(config_class=Config):
     
     @app.context_processor
     def inject_context():
+        branding = {}
+        try:
+            from models import SystemConfig
+            configs = SystemConfig.query.filter_by(category='branding').all()
+            for c in configs:
+                branding[c.key] = c.value
+        except Exception:
+            pass
+
         return {
             'now': datetime.utcnow(),
             't': t,
-            'current_lang': session.get('lang', 'fr')
+            'current_lang': session.get('lang', 'fr'),
+            'branding': branding
         }
     
     @app.errorhandler(404)

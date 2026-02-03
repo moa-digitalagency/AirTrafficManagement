@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Rôles{% endblock %}
+{% block page_title %}Rôles et Permissions{% endblock %}
+
+{% block content %}
+<div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+    <div class="p-6 border-b border-dark-100 flex justify-between items-center">
+        <h3 class="font-semibold text-white">Rôles existants</h3>
+        <a href="{{ url_for('admin.edit_role') }}" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+            <i class="fas fa-plus"></i>
+            Nouveau Rôle
+        </a>
+    </div>
+
+    <div class="p-6">
+        <div class="space-y-4">
+            {% for role in roles %}
+            <div class="flex items-center justify-between p-4 bg-dark-500 rounded-lg border border-dark-100">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-lg font-bold text-white">{{ role.name }}</span>
+                        {% if role.is_system %}
+                        <span class="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full">Système</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-gray-400">{{ role.description }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ role.permissions|length }} permissions</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <a href="{{ url_for('admin.edit_role', role_id=role.id) }}" class="p-2 text-blue-400 hover:text-blue-300">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    {% if not role.is_system %}
+                    <form method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="action" value="delete"/>
+                        <input type="hidden" name="role_id" value="{{ role.id }}"/>
+                        <button type="submit" class="p-2 text-red-400 hover:text-red-300">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

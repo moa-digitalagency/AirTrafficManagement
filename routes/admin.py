@@ -1,9 +1,13 @@
-from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for
+from flask import Blueprint, render_template, jsonify, request, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
+import os
 from datetime import datetime, timedelta
 
 from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig, SystemConfig
+from models.user import Role, Permission
 from utils.decorators import role_required
+from services.translation_service import t
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -35,6 +39,89 @@ def users():
     return render_template('admin/users.html', users=users)
 
 
+@admin_bp.route('/roles', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin'])
+def roles():
+    if request.method == 'POST':
+        if 'action' in request.form:
+            action = request.form['action']
+            if action == 'delete':
+                role_id = request.form.get('role_id')
+                role = Role.query.get(role_id)
+                if role and not role.is_system:
+                    if len(role.users) > 0:
+                        flash('Impossible de supprimer un rôle assigné à des utilisateurs.', 'error')
+                    else:
+                        db.session.delete(role)
+                        db.session.commit()
+                        flash(t('admin.role_deleted').format(name=role.name), 'success')
+                else:
+                    flash('Impossible de supprimer ce rôle.', 'error')
+
+    roles = Role.query.order_by(Role.name).all()
+    return render_template('admin/roles.html', roles=roles)
+
+
+@admin_bp.route('/roles/edit/<int:role_id>', methods=['GET', 'POST'])
+@admin_bp.route('/roles/create', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin'])
+def edit_role(role_id=None):
+    role = Role.query.get(role_id) if role_id else None
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        description = request.form.get('description')
+        perm_ids = request.form.getlist('permissions')
+
+        if not role:
+            if Role.query.filter_by(name=name).first():
+                flash(f'Le rôle {name} existe déjà.', 'error')
+                return redirect(url_for('admin.edit_role'))
+            role = Role(name=name, description=description)
+            db.session.add(role)
+        else:
+            if role.name != name and Role.query.filter_by(name=name).first():
+                flash(f'Le rôle {name} existe déjà.', 'error')
+                return redirect(url_for('admin.edit_role', role_id=role.id))
+            role.name = name
+            role.description = description
+            role.permissions = [] # Reset permissions
+
+        # Add selected permissions
+        for pid in perm_ids:
+            perm = Permission.query.get(int(pid))
+            if perm:
+                role.permissions.append(perm)
+
+        db.session.commit()
+
+        log = AuditLog(
+            user_id=current_user.id,
+            action='update_role',
+            entity_type='role',
+            entity_id=role.id,
+            entity_name=role.name,
+            ip_address=request.remote_addr
+        )
+        db.session.add(log)
+        db.session.commit()
+
+        flash(t('admin.role_saved').format(name=role.name), 'success')
+        return redirect(url_for('admin.roles'))
+
+    permissions = Permission.query.order_by(Permission.resource, Permission.action).all()
+    # Group permissions by resource for better UI
+    grouped_perms = {}
+    for p in permissions:
+        if p.resource not in grouped_perms:
+            grouped_perms[p.resource] = []
+        grouped_perms[p.resource].append(p)
+
+    return render_template('admin/role_form.html', role=role, grouped_perms=grouped_perms)
+
+
 @admin_bp.route('/users/create', methods=['GET', 'POST'])
 @login_required
 @role_required(['superadmin'])
@@ -48,11 +135,11 @@ def create_user():
         last_name = request.form.get('last_name', '').strip()
         
         if User.query.filter_by(username=username).first():
-            flash('Ce nom d\'utilisateur existe déjà.', 'error')
+            flash(t('admin.user_exists'), 'error')
             return render_template('admin/user_form.html', user=None)
         
         if User.query.filter_by(email=email).first():
-            flash('Cet email existe déjà.', 'error')
+            flash(t('admin.email_exists'), 'error')
             return render_template('admin/user_form.html', user=None)
         
         user = User(
@@ -76,7 +163,7 @@ def create_user():
         db.session.add(log)
         db.session.commit()
         
-        flash(f'Utilisateur {username} créé avec succès.', 'success')
+        flash(t('admin.user_created').format(username=username), 'success')
         return redirect(url_for('admin.users'))
     
     return render_template('admin/user_form.html', user=None)
@@ -109,7 +196,7 @@ def edit_user(user_id):
         db.session.add(log)
         db.session.commit()
         
-        flash(f'Utilisateur {user.username} mis à jour.', 'success')
+        flash(t('admin.user_updated').format(username=user.username), 'success')
         return redirect(url_for('admin.users'))
     
     return render_template('admin/user_form.html', user=user)
@@ -122,7 +209,7 @@ def toggle_user(user_id):
     user = User.query.get_or_404(user_id)
     
     if user.id == current_user.id:
-        flash('Vous ne pouvez pas désactiver votre propre compte.', 'error')
+        flash(t('admin.cannot_disable_self'), 'error')
         return redirect(url_for('admin.users'))
     
     user.is_active = not user.is_active
@@ -138,33 +225,255 @@ def toggle_user(user_id):
     db.session.add(log)
     db.session.commit()
     
-    status = 'activé' if user.is_active else 'désactivé'
-    flash(f'Utilisateur {user.username} {status}.', 'success')
+    status = t('common.enabled') if user.is_active else t('common.disabled')
+    flash(t('admin.user_status_changed').format(username=user.username, status=status), 'success')
     return redirect(url_for('admin.users'))
 
 
-@admin_bp.route('/airlines')
+@admin_bp.route('/airlines', methods=['GET', 'POST'])
 @login_required
 @role_required(['superadmin', 'billing'])
 def airlines():
-    airlines = Airline.query.order_by(Airline.name).all()
-    return render_template('admin/airlines.html', airlines=airlines)
+    # Delete action
+    if request.method == 'POST' and request.form.get('action') == 'delete':
+        id = request.form.get('id')
+        airline = Airline.query.get(id)
+        if airline:
+            db.session.delete(airline)
+            db.session.commit()
+            flash(t('admin.airline_deleted'), 'success')
+
+    # Search
+    search = request.args.get('search', '')
+    query = Airline.query
+    if search:
+        query = query.filter(db.or_(
+            Airline.name.ilike(f'%{search}%'),
+            Airline.icao_code.ilike(f'%{search}%'),
+            Airline.iata_code.ilike(f'%{search}%'),
+            Airline.country.ilike(f'%{search}%')
+        ))
+
+    airlines = query.order_by(Airline.name).all()
+    return render_template('admin/airlines.html', airlines=airlines, search=search)
 
 
-@admin_bp.route('/aircraft')
+@admin_bp.route('/airlines/edit/<int:id>', methods=['GET', 'POST'])
+@admin_bp.route('/airlines/create', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin', 'billing'])
+def edit_airline(id=None):
+    airline = Airline.query.get(id) if id else None
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        icao = request.form.get('icao_code')
+        iata = request.form.get('iata_code')
+        country = request.form.get('country')
+        email = request.form.get('email')
+
+        if not airline:
+            airline = Airline(icao_code=icao)
+            db.session.add(airline)
+        else:
+            airline.icao_code = icao
+
+        airline.name = name
+        airline.iata_code = iata
+        airline.country = country
+        airline.email = email
+        airline.is_active = request.form.get('is_active') == 'on'
+
+        db.session.commit()
+        flash(t('admin.airline_saved').format(name=name), 'success')
+        return redirect(url_for('admin.airlines'))
+
+    return render_template('admin/airline_form.html', airline=airline)
+
+
+@admin_bp.route('/airlines/fetch', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def fetch_airline_data():
+    iata = request.form.get('iata_code')
+    if not iata:
+        flash('Code IATA requis.', 'error')
+        return redirect(url_for('admin.airlines'))
+
+    from services.api_client import aviationstack
+    data = aviationstack.get_airline_info(iata)
+
+    if data:
+        airline = Airline.query.filter_by(iata_code=iata).first()
+        if not airline:
+            airline = Airline(iata_code=iata)
+            db.session.add(airline)
+
+        airline.name = data.get('airline_name') or data.get('name')
+        airline.icao_code = data.get('icao_code')
+        airline.country = data.get('country_name')
+        airline.is_active = True
+
+        db.session.commit()
+        flash(t('admin.fetch_success'), 'success')
+    else:
+        flash(t('admin.fetch_error'), 'error')
+
+    return redirect(url_for('admin.airlines'))
+
+
+@admin_bp.route('/aircraft', methods=['GET', 'POST'])
 @login_required
 @role_required(['superadmin', 'supervisor'])
 def aircraft():
-    aircraft = Aircraft.query.order_by(Aircraft.operator).all()
-    return render_template('admin/aircraft.html', aircraft=aircraft)
+    # Delete action
+    if request.method == 'POST' and request.form.get('action') == 'delete':
+        id = request.form.get('id')
+        ac = Aircraft.query.get(id)
+        if ac:
+            db.session.delete(ac)
+            db.session.commit()
+            flash('Aéronef supprimé.', 'success')
+
+    # Search
+    search = request.args.get('search', '')
+    query = Aircraft.query
+    if search:
+        query = query.filter(db.or_(
+            Aircraft.registration.ilike(f'%{search}%'),
+            Aircraft.icao24.ilike(f'%{search}%'),
+            Aircraft.model.ilike(f'%{search}%'),
+            Aircraft.operator.ilike(f'%{search}%')
+        ))
+
+    aircraft = query.order_by(Aircraft.operator).all()
+    return render_template('admin/aircraft.html', aircraft=aircraft, search=search)
 
 
-@admin_bp.route('/airports')
+@admin_bp.route('/aircraft/edit/<int:id>', methods=['GET', 'POST'])
+@admin_bp.route('/aircraft/create', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin', 'supervisor'])
+def edit_aircraft(id=None):
+    ac = Aircraft.query.get(id) if id else None
+
+    if request.method == 'POST':
+        if not ac:
+            ac = Aircraft()
+            db.session.add(ac)
+
+        ac.registration = request.form.get('registration')
+        ac.icao24 = request.form.get('icao24')
+        ac.model = request.form.get('model')
+        ac.type_code = request.form.get('type_code')
+        ac.operator = request.form.get('operator')
+        ac.operator_iata = request.form.get('operator_iata')
+        ac.category = request.form.get('category', 'commercial')
+
+        try:
+            ac.mtow = float(request.form.get('mtow', 0))
+        except ValueError:
+            ac.mtow = 0
+
+        db.session.commit()
+        flash(f'Aéronef {ac.registration} enregistré.', 'success')
+        return redirect(url_for('admin.aircraft'))
+
+    return render_template('admin/aircraft_form.html', aircraft=ac)
+
+
+@admin_bp.route('/airports', methods=['GET', 'POST'])
 @login_required
 @role_required(['superadmin', 'supervisor'])
 def airports():
-    airports = Airport.query.order_by(Airport.icao_code).all()
-    return render_template('admin/airports.html', airports=airports)
+    # Delete action
+    if request.method == 'POST' and request.form.get('action') == 'delete':
+        id = request.form.get('id')
+        airport = Airport.query.get(id)
+        if airport:
+            db.session.delete(airport)
+            db.session.commit()
+            flash('Aéroport supprimé.', 'success')
+
+    # Search
+    search = request.args.get('search', '')
+    query = Airport.query
+    if search:
+        query = query.filter(db.or_(
+            Airport.name.ilike(f'%{search}%'),
+            Airport.icao_code.ilike(f'%{search}%'),
+            Airport.city.ilike(f'%{search}%')
+        ))
+
+    airports = query.order_by(Airport.icao_code).all()
+    return render_template('admin/airports.html', airports=airports, search=search)
+
+
+@admin_bp.route('/airports/edit/<int:id>', methods=['GET', 'POST'])
+@admin_bp.route('/airports/create', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin', 'supervisor'])
+def edit_airport(id=None):
+    airport = Airport.query.get(id) if id else None
+
+    if request.method == 'POST':
+        if not airport:
+            airport = Airport()
+            db.session.add(airport)
+
+        airport.icao_code = request.form.get('icao_code')
+        airport.iata_code = request.form.get('iata_code')
+        airport.name = request.form.get('name')
+        airport.city = request.form.get('city')
+        airport.country = request.form.get('country')
+        airport.status = request.form.get('status', 'open')
+        airport.is_domestic = request.form.get('is_domestic') == 'on'
+
+        try:
+            airport.latitude = float(request.form.get('latitude', 0))
+            airport.longitude = float(request.form.get('longitude', 0))
+            airport.elevation_ft = int(request.form.get('elevation_ft', 0))
+        except ValueError:
+            pass
+
+        db.session.commit()
+        flash(f'Aéroport {airport.icao_code} enregistré.', 'success')
+        return redirect(url_for('admin.airports'))
+
+    return render_template('admin/airport_form.html', airport=airport)
+
+
+@admin_bp.route('/airports/fetch', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def fetch_airport_data():
+    icao = request.form.get('icao_code')
+    if not icao:
+        flash('Code OACI requis.', 'error')
+        return redirect(url_for('admin.airports'))
+
+    from services.api_client import aviationstack
+
+    data = aviationstack.get_airport_info(icao)
+    if data:
+        airport = Airport.query.filter_by(icao_code=icao).first()
+        if not airport:
+            airport = Airport(icao_code=icao)
+            db.session.add(airport)
+
+        airport.name = data.get('airport_name')
+        airport.iata_code = data.get('iata_code')
+        airport.country = data.get('country_name')
+        # Some guesswork on API fields mapping
+        if data.get('latitude'): airport.latitude = float(data.get('latitude'))
+        if data.get('longitude'): airport.longitude = float(data.get('longitude'))
+
+        db.session.commit()
+        flash(f'Données aéroport {icao} mises à jour.', 'success')
+    else:
+        flash(f'Impossible de trouver l\'aéroport {icao} ou API non configurée.', 'error')
+
+    return redirect(url_for('admin.airports'))
 
 
 @admin_bp.route('/audit-logs')
@@ -201,7 +510,11 @@ def settings():
         configs = SystemConfig.query.filter_by(is_editable=True).all()
         changes_count = 0
 
+        # Handle regular form fields
         for config in configs:
+            if config.value_type == 'file':
+                continue
+
             new_value = request.form.get(config.key)
             if new_value is not None and new_value != config.value:
                 old_value = config.value
@@ -220,13 +533,126 @@ def settings():
                 db.session.add(log)
                 changes_count += 1
 
+        # Handle file uploads
+        upload_fields = ['logo_path', 'favicon_path']
+        for field in upload_fields:
+            if field in request.files:
+                file = request.files[field]
+                if file and file.filename:
+                    filename = secure_filename(f"{field}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                    upload_path = os.path.join(current_app.static_folder, 'uploads', filename)
+                    os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                    file.save(upload_path)
+
+                    # Update config
+                    config = SystemConfig.query.filter_by(key=field).first()
+                    if not config:
+                        config = SystemConfig(key=field, category='branding', value_type='file', is_editable=True)
+                        db.session.add(config)
+
+                    old_value = config.value
+                    new_value = f'uploads/{filename}'
+
+                    if old_value != new_value:
+                        config.value = new_value
+                        config.updated_by = current_user.id
+
+                        log = AuditLog(
+                            user_id=current_user.id,
+                            action='update_system_config',
+                            entity_type='system_config',
+                            entity_id=config.id,
+                            old_value=old_value,
+                            new_value=new_value,
+                            ip_address=request.remote_addr
+                        )
+                        db.session.add(log)
+                        changes_count += 1
+
         if changes_count > 0:
             db.session.commit()
-            flash(f'{changes_count} paramètre(s) mis à jour.', 'success')
+            flash(t('admin.settings_updated').format(count=changes_count), 'success')
         else:
-            flash('Aucun changement détecté.', 'info')
+            flash(t('admin.no_changes'), 'info')
 
         return redirect(url_for('admin.settings'))
 
     configs = SystemConfig.query.filter_by(is_editable=True).order_by(SystemConfig.category, SystemConfig.key).all()
     return render_template('admin/settings.html', configs=configs)
+
+
+@admin_bp.route('/languages', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin'])
+def languages():
+    from services.translation_service import translation_service
+    import json
+
+    if request.method == 'POST':
+        # Handle file upload
+        if 'file' in request.files:
+            file = request.files['file']
+            if file and file.filename.endswith('.json'):
+                filename = secure_filename(file.filename)
+                # Use current_app.root_path which points to the application root
+                # Since locales is in the root and app.py is in the root, we can use that.
+                # However, Flask apps created with app.py in root usually have root_path as that directory.
+                locales_dir = os.path.join(current_app.root_path, 'locales')
+
+                if not os.path.exists(locales_dir):
+                    # Fallback if locales is not found (e.g. running from different dir)
+                    locales_dir = os.path.abspath('locales')
+
+                os.makedirs(locales_dir, exist_ok=True)
+                file.save(os.path.join(locales_dir, filename))
+                translation_service.reload()
+                flash(t('admin.lang_file_uploaded').format(filename=filename), 'success')
+
+                log = AuditLog(
+                    user_id=current_user.id,
+                    action='upload_language_file',
+                    entity_type='language',
+                    entity_name=filename,
+                    ip_address=request.remote_addr
+                )
+                db.session.add(log)
+                db.session.commit()
+
+        # Handle toggle
+        elif 'toggle' in request.form:
+            lang_code = request.form.get('toggle')
+            config = SystemConfig.query.filter_by(key='enabled_languages').first()
+            if config:
+                enabled = config.get_typed_value() or []
+
+                if lang_code in enabled:
+                    enabled.remove(lang_code)
+                    status = 'désactivé'
+                else:
+                    enabled.append(lang_code)
+                    status = 'activé'
+
+                config.value = json.dumps(enabled)
+
+                log = AuditLog(
+                    user_id=current_user.id,
+                    action='toggle_language',
+                    entity_type='language',
+                    entity_name=lang_code,
+                    new_value=status,
+                    ip_address=request.remote_addr
+                )
+                db.session.add(log)
+                db.session.commit()
+                status_text = t('common.enabled') if status == 'activé' else t('common.disabled')
+                flash(t('admin.lang_toggled').format(lang=lang_code, status=status_text), 'success')
+
+        return redirect(url_for('admin.languages'))
+
+    available_locales = translation_service.get_available_locales()
+    config = SystemConfig.query.filter_by(key='enabled_languages').first()
+    enabled_locales = config.get_typed_value() if config else []
+
+    return render_template('admin/languages.html',
+                          available=available_locales,
+                          enabled=enabled_locales)

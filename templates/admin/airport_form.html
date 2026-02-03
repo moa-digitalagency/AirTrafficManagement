@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{% if airport %}Modifier Aéroport{% else %}Nouvel Aéroport{% endif %}{% endblock %}
+{% block page_title %}{% if airport %}Modifier Aéroport{% else %}Ajouter un Aéroport{% endif %}{% endblock %}
+
+{% block content %}
+<div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden max-w-4xl mx-auto">
+    <form method="POST" class="p-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Code OACI</label>
+                <input type="text" name="icao_code" value="{{ airport.icao_code if airport else '' }}" required maxlength="4"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Code IATA</label>
+                <input type="text" name="iata_code" value="{{ airport.iata_code if airport else '' }}" maxlength="3"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4 md:col-span-2">
+                <label class="block text-sm font-medium text-white mb-2">Nom de l'aéroport</label>
+                <input type="text" name="name" value="{{ airport.name if airport else '' }}" required
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Ville</label>
+                <input type="text" name="city" value="{{ airport.city if airport else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Pays</label>
+                <input type="text" name="country" value="{{ airport.country if airport else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Latitude</label>
+                <input type="number" step="any" name="latitude" value="{{ airport.latitude if airport else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Longitude</label>
+                <input type="number" step="any" name="longitude" value="{{ airport.longitude if airport else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Altitude (ft)</label>
+                <input type="number" name="elevation_ft" value="{{ airport.elevation_ft if airport else '' }}"
+                       class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-white mb-2">Statut</label>
+                <select name="status" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+                    <option value="open" {% if airport and airport.status == 'open' %}selected{% endif %}>Ouvert</option>
+                    <option value="closed" {% if airport and airport.status == 'closed' %}selected{% endif %}>Fermé</option>
+                    <option value="restricted" {% if airport and airport.status == 'restricted' %}selected{% endif %}>Restreint</option>
+                </select>
+            </div>
+
+            <div class="mb-4 flex items-center">
+                 <input type="checkbox" name="is_domestic" id="is_domestic" {% if airport and airport.is_domestic %}checked{% endif %}
+                       class="form-checkbox bg-dark-600 border-dark-200 text-primary-600 rounded mr-2">
+                 <label for="is_domestic" class="text-sm font-medium text-white">Domestique</label>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-4 mt-8">
+            <a href="{{ url_for('admin.airports') }}" class="px-6 py-2 text-gray-400 hover:text-white">Annuler</a>
+            <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors">
+                Enregistrer
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
