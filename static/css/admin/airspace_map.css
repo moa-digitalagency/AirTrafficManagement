@@ -1,0 +1,9 @@
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 0.5rem;
+        z-index: 1;
+    }
+    .leaflet-container {
+        background: #1e293b;
+    }

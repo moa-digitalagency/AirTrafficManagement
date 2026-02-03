@@ -5,6 +5,7 @@
  * Fait par : Aisance KALONJI, www.aisancekalonji.com
  * Auditer par : La CyberConfiance, www.cyberconfiance.com
  */
+"""
 import os
 from dotenv import load_dotenv
 

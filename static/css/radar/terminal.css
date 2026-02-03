@@ -1,0 +1,37 @@
+    .cycle-step {
+        position: relative;
+        padding-left: 30px;
+    }
+
+    .cycle-step::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 24px;
+        bottom: -16px;
+        width: 2px;
+        background: linear-gradient(to bottom, currentColor 50%, transparent 50%);
+        background-size: 2px 8px;
+    }
+
+    .cycle-step:last-child::before {
+        display: none;
+    }
+
+    .cycle-icon {
+        position: absolute;
+        left: 0;
+        top: 4px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+    }
+
+    .parking-timer {
+        font-family: monospace;
+        font-size: 1.1em;
+    }

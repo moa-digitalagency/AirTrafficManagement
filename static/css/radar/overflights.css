@@ -1,0 +1,53 @@
+    #overflight-map {
+        height: 400px;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: height 0.3s ease;
+    }
+
+    #overflight-map.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh !important;
+        z-index: 9999;
+        border-radius: 0;
+    }
+
+    .aircraft-marker {
+        background: none;
+        border: none;
+    }
+
+    .aircraft-icon {
+        transition: all 0.3s ease;
+    }
+
+    .trajectory-tooltip {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        color: white;
+    }
+
+    .entry-marker {
+        background: #22c55e;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    .exit-marker {
+        background: #ef4444;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+
+    .position-marker {
+        background: #3b82f6;
+        border-radius: 50%;
+        width: 6px;
+        height: 6px;
+    }
