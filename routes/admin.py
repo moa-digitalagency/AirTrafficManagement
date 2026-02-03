@@ -17,7 +17,7 @@ def index():
     airline_count = Airline.query.count()
     airport_count = Airport.query.count()
     
-    recent_logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(20).all()
+    recent_logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(20).all()
     
     return render_template('admin/index.html',
                           user_count=user_count,
@@ -183,7 +183,7 @@ def audit_logs():
     if action:
         query = query.filter(AuditLog.action.ilike(f'%{action}%'))
     
-    logs = query.order_by(AuditLog.timestamp.desc()).paginate(
+    logs = query.order_by(AuditLog.created_at.desc()).paginate(
         page=page, per_page=50, error_out=False
     )
     

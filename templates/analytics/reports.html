@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Rapports Analytiques - ATM-RDC{% endblock %}
+{% block page_title %}Rapports Analytiques{% endblock %}
+{% block page_subtitle %}Analyse détaillée par période{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .chart-container {
+        position: relative;
+        height: 400px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="bg-dark-400 rounded-xl border border-dark-100 p-6 mb-6">
+    <form method="GET" action="{{ url_for('analytics.reports') }}" class="flex flex-wrap items-end gap-4">
+        <div>
+            <label class="block text-sm text-gray-400 mb-2">Période</label>
+            <div class="flex gap-2">
+                <button type="button" onclick="setPeriod('today')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">Aujourd'hui</button>
+                <button type="button" onclick="setPeriod('week')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">7 jours</button>
+                <button type="button" onclick="setPeriod('month')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">30 jours</button>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-2">Du</label>
+            <input type="date" name="start_date" id="start_date" value="{{ start_date }}"
+                   class="px-4 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-2">Au</label>
+            <input type="date" name="end_date" id="end_date" value="{{ end_date }}"
+                   class="px-4 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+        </div>
+
+        <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors">
+            <i class="fas fa-filter mr-1"></i> Appliquer
+        </button>
+    </form>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+        <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <i class="fas fa-plane text-blue-400"></i>
+            </div>
+            <span class="text-xs text-gray-400">Total</span>
+        </div>
+        <p class="text-sm text-gray-400 mb-1">Survols</p>
+        <p class="text-3xl font-bold text-white">{{ overflights_count }}</p>
+    </div>
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+        <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <i class="fas fa-dollar-sign text-green-400"></i>
+            </div>
+            <span class="text-xs text-gray-400">Revenus</span>
+        </div>
+        <p class="text-sm text-gray-400 mb-1">Revenus (Période)</p>
+        <p class="text-3xl font-bold text-green-400">${{ "%.2f"|format(total_revenue) }}</p>
+    </div>
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+        <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <i class="fas fa-plane-arrival text-purple-400"></i>
+            </div>
+            <span class="text-xs text-gray-400">Total</span>
+        </div>
+        <p class="text-sm text-gray-400 mb-1">Vols Totaux</p>
+        <p class="text-3xl font-bold text-white">{{ flights_count }}</p>
+    </div>
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+        <div class="flex items-center justify-between mb-2">
+            <div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <i class="fas fa-file-invoice text-yellow-400"></i>
+            </div>
+            <span class="text-xs text-gray-400">Factures</span>
+        </div>
+        <p class="text-sm text-gray-400 mb-1">Factures Générées</p>
+        <p class="text-3xl font-bold text-yellow-400">{{ invoices_count }}</p>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+    <h3 class="font-semibold text-white mb-4">Évolution du Trafic (Survols)</h3>
+    <div class="chart-container">
+        <canvas id="reportTrafficChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function setPeriod(period) {
+        const today = new Date();
+        const endStr = today.toISOString().split('T')[0];
+        let start = new Date();
+
+        if (period === 'today') {
+            // start is today
+        } else if (period === 'week') {
+            start.setDate(today.getDate() - 7);
+        } else if (period === 'month') {
+            start.setDate(today.getDate() - 30);
+        }
+
+        const startStr = start.toISOString().split('T')[0];
+
+        document.getElementById('start_date').value = startStr;
+        document.getElementById('end_date').value = endStr;
+    }
+
+    // Chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('reportTrafficChart').getContext('2d');
+        const data = {{ traffic_data | tojson }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => d.date),
+                datasets: [{
+                    label: 'Vols',
+                    data: data.map(d => d.count),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' }, beginAtZero: true }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+</script>
+{% endblock %}
