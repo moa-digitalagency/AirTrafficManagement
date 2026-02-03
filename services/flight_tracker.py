@@ -184,7 +184,8 @@ def get_active_flights(use_external_api=True):
                             'registration': flight_data.get('registration'),
                             'model': flight_data.get('aircraft_type_iata') or flight_data.get('aircraft_type_icao'),
                             'type': flight_data.get('aircraft_type_icao') or flight_data.get('aircraft_type_iata'),
-                            'operator': flight_data.get('airline_name') or flight_data.get('airline_iata')
+                            'operator': flight_data.get('airline_name') or flight_data.get('airline_iata'),
+                            'airline_iata': flight_data.get('airline_iata')
                         }
                     })
                 
@@ -256,7 +257,8 @@ def get_active_flights(use_external_api=True):
                 'registration': aircraft.registration if aircraft else None,
                 'model': aircraft.model if aircraft else None,
                 'type': aircraft.type_code if aircraft else None,
-                'operator': aircraft.operator if aircraft else None
+                'operator': aircraft.operator if aircraft else None,
+                'airline_iata': None  # DB flights might not have this easily available unless stored
             } if aircraft else None
         })
     

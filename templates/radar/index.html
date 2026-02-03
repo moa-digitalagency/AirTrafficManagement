@@ -126,6 +126,97 @@
         cursor: pointer;
         border: 2px solid #3b82f6;
     }
+
+    /* Radar Scan Effect */
+    .radar-scan-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 400; /* Above map tiles, below overlays */
+        pointer-events: none;
+        overflow: hidden;
+        display: none;
+    }
+
+    .radar-scan-overlay.active {
+        display: block;
+    }
+
+    .radar-scan {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 200vw;
+        height: 200vw;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        background: conic-gradient(
+            from 0deg,
+            rgba(59, 130, 246, 0) 0deg,
+            rgba(59, 130, 246, 0) 300deg,
+            rgba(59, 130, 246, 0.1) 340deg,
+            rgba(59, 130, 246, 0.3) 360deg
+        );
+        animation: radar-spin 8s linear infinite;
+        opacity: 0.5;
+    }
+
+    @keyframes radar-spin {
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* SVG Icons */
+    .aircraft-icon-svg {
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+        transition: all 0.3s ease;
+    }
+
+    /* Smart Labels */
+    .smart-label {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        border-radius: 6px;
+        padding: 4px 8px;
+        color: white;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 80px;
+    }
+
+    .smart-label-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 2px;
+        margin-bottom: 2px;
+    }
+
+    .smart-label-callsign {
+        font-weight: 700;
+        font-size: 11px;
+    }
+
+    .smart-label-logo {
+        height: 12px;
+        width: auto;
+        max-width: 20px;
+        object-fit: contain;
+    }
+
+    .smart-label-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: #94a3b8;
+    }
 </style>
 {% endblock %}
 
@@ -159,6 +250,9 @@
                     <button onclick="toggleWeather()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" id="btn-weather" data-testid="btn-weather">
                         <i class="fas fa-cloud mr-1"></i> {{ t('radar.weather') }}
                     </button>
+                    <button onclick="toggleScan()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" id="btn-scan" title="{{ t('radar.scan_effect') }}">
+                        <i class="fas fa-satellite-dish mr-1"></i> {{ t('radar.toggle_scan') }}
+                    </button>
                     <button onclick="toggleFullscreen()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" id="btn-fullscreen" data-testid="btn-fullscreen">
                         <i class="fas fa-expand mr-1"></i> {{ t('radar.fullscreen') }}
                     </button>
@@ -168,7 +262,11 @@
                 </div>
             </div>
             
-            <div id="radar-map" data-testid="radar-map"></div>
+            <div id="radar-map" data-testid="radar-map">
+                <div id="radar-scan-overlay" class="radar-scan-overlay">
+                    <div class="radar-scan"></div>
+                </div>
+            </div>
             
             <!-- Layer Control Panel -->
             <div class="layer-control" id="layer-control">
@@ -355,6 +453,14 @@
         exit_fullscreen: "{{ t('radar.exit_fullscreen') }}"
     };
 
+    // Aircraft SVGs
+    const aircraftIcons = {
+        jet: `<svg viewBox="0 0 512 512" fill="currentColor"><path d="M427.6 236.8L352 192l0-106.3c0-37.4-30.6-67.7-68.3-67.7s-68.3 30.4-68.3 67.7L215.4 192l-76-44.3 0-25.3c0-8.9-7.2-16-16-16s-16 7.2-16 16l0 35L15.6 205.4C6.1 210.9 0 220.8 0 231.8s6.1 20.9 15.6 26.4l91.8 47.7 0 35c0 8.9 7.2 16 16 16s16-7.2 16-16l0-25.3 76-44.3 0 106.3c0 37.4 30.6 67.7 68.3 67.7s68.3-30.4 68.3-67.7l0-106.3 75.6-44.8c18.6-11 30.3-31 30.3-52.6s-11.7-41.6-30.3-52.6z"/></svg>`,
+        prop: `<svg viewBox="0 0 576 512" fill="currentColor"><path d="M400 128l0-16c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 16-176 0c-35.3 0-64 28.7-64 64l0 128c0 35.3 28.7 64 64 64l176 0 0 16c0 17.7 14.3 32 32 32s32-14.3 32-32l0-16 23.4 0c44.2 0 80 35.8 80 80c0 8.8 7.2 16 16 16s16-7.2 16-16c0-61.9-50.1-112-112-112l-23.4 0 0-160L400 128zM368 256l112 0c8.8 0 16-7.2 16-16s-7.2-16-16-16l-112 0 0 32zM32 240c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0-64-64 0z"/></svg>`, // Using a simpler plane icon as placeholder for prop
+        heli: `<svg viewBox="0 0 640 512" fill="currentColor"><path d="M349.9 59.5C335.8 52.8 320.1 52.8 306 59.5L13.8 198.5C5.3 202.5 0 211.2 0 220.6c0 9.4 5.3 18.1 13.8 22.1l65.8 31.3c8.3-3.1 17.1-4.9 26.2-5.3L153.2 227l-55-73.4c-5.7-7.6-4.5-18.3 2.7-24.5l26.2-22.6c6.5-5.6 16.3-5.2 22.3 1L200.7 161l254.6 0 51.3-53.5c6-6.1 15.8-6.6 22.3-1l26.2 22.6c7.2 6.2 8.4 16.9 2.7 24.5L502.8 227l47.5 41.7c9.2 .4 17.9 2.2 26.2 5.3l65.8-31.3c8.5-4 13.8-12.7 13.8-22.1c0-9.4-5.3-18.1-13.8-22.1L349.9 59.5zM368 224l0 96 16 0c26.5 0 48 21.5 48 48l0 16 0 32 32 0 0-32c0-8.8 7.2-16 16-16s16 7.2 16 16l0 32c0 17.7-14.3 32-32 32l-32 0 0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16-64 0 0 16c0 8.8-7.2 16-16 16s-16-7.2-16-16l0-16-48 0c-17.7 0-32-14.3-32-32l0-32c0-8.8 7.2-16 16-16s16 7.2 16 16l0 32 32 0 0-16c0-26.5 21.5-48 48-48l16 0 0-96 32 0z"/></svg>`,
+        plane: `<svg viewBox="0 0 576 512" fill="currentColor"><path d="M482.3 192c34.2 0 58.1-12.2 73.7-26.4c8.8-8 16.6-17.8 20-27.7l0 0c2.5-7.4-4-15-11.7-16c-8.8-1.1-17.7-1.5-26.4-1.5c-22.5 0-43.9 3.1-63.7 8.5L343.9 16l-48.4 0c-4.4 0-8 3.6-8 8l0 125.7-93.6 28.6L125 106.8c-3.7-6.9-10.8-11.2-18.6-11.2l-37.1 0c-5.5 0-9.4 5.4-7.7 10.6l21.2 63.6L16 189.2C7.2 192 1.4 200.4 1.4 209.7c0 9.2 5.6 17.4 14.2 20.3l66.9 22.3L61.6 316c-1.7 5.2 2.2 10.6 7.7 10.6l37.1 0c7.8 0 14.9-4.3 18.6-11.2l68.9-71.5 93.6 31.2L287.5 400c0 4.4 3.6 8 8 8l48.4 0 130.3-112.9c19.8 5.4 41.2 8.5 63.7 8.5c8.8 0 17.7-.4 26.4-1.5c7.7-1 14.1-8.6 11.7-16l0 0c-3.4-9.9-11.2-19.7-20-27.7c-15.6-14.2-39.6-26.4-73.7-26.4l-112.5 0-112.5 0z"/></svg>`
+    };
+
     let map;
     let flightsLayer;
     let boundaryLayer;
@@ -396,6 +502,32 @@
         loadFlights();
         loadWeatherTiles();
         
+        // Add zoom listener for dynamic icon scaling
+        map.on('zoomend', () => {
+            updateFlightsOnMap();
+        });
+
+        // Add Immersive Controls on the map
+        const ImmersiveControl = L.Control.extend({
+            onAdd: function(map) {
+                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                div.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+                div.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+
+                div.innerHTML = `
+                    <a href="#" role="button" title="${i18n.fullscreen}" onclick="toggleFullscreen(); return false;" style="color: white; width: 34px; height: 34px; line-height: 34px; text-align: center; display: block; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <i class="fas fa-expand"></i>
+                    </a>
+                    <a href="#" role="button" title="${i18n.scan_effect}" onclick="toggleScan(); return false;" style="color: white; width: 34px; height: 34px; line-height: 34px; text-align: center; display: block;">
+                        <i class="fas fa-satellite-dish"></i>
+                    </a>
+                `;
+                return div;
+            }
+        });
+
+        map.addControl(new ImmersiveControl({ position: 'topright' }));
+
         setInterval(loadFlights, 10000);
         updateTime();
         setInterval(updateTime, 1000);
@@ -587,21 +719,19 @@
     
     function getAircraftIcon(flight) {
         const alt = flight.altitude || 0;
-        const isClimbing = flight.vertical_speed > 500;
-        const isDescending = flight.vertical_speed < -500;
         const isEmergency = flight.squawk === '7700';
 
         const type = (flight.aircraft?.type || '').toUpperCase();
         const model = (flight.aircraft?.model || '').toUpperCase();
 
         const isHeli = type.includes('H') || model.includes('HELI');
-        const isJet = model.includes('B7') || model.includes('A3') || model.includes('ERJ') || model.includes('CRJ');
-        const isSmall = model.includes('C172') || model.includes('PA28') || model.includes('CESSNA');
+        const isJet = model.includes('B7') || model.includes('A3') || model.includes('ERJ') || model.includes('CRJ') || type === 'J';
+        const isProp = model.includes('C172') || model.includes('PA28') || model.includes('CESSNA') || model.includes('DH8') || model.includes('ATR');
         
-        let icon = 'fa-plane';
-        if (isHeli) icon = 'fa-helicopter';
-        else if (isClimbing) icon = 'fa-plane-departure';
-        else if (isDescending) icon = 'fa-plane-arrival';
+        let svg = aircraftIcons.plane;
+        if (isHeli) svg = aircraftIcons.heli;
+        else if (isJet) svg = aircraftIcons.jet;
+        else if (isProp) svg = aircraftIcons.prop;
         
         let color = '#22c55e';
         if (isEmergency) color = '#ef4444';
@@ -609,52 +739,92 @@
         else if (flight.status === 'on_ground') color = '#3b82f6';
         else if (alt < 10000) color = '#38bdf8';
         
-        let size = 18; // Default medium
-        if (isHeli) size = 16;
-        else if (isSmall) size = 14;
-        else if (isJet || alt > 30000) size = 24;
+        // Base size, scaled by map zoom later via CSS or JS
+        let size = 24;
+        if (isHeli) size = 20;
+        else if (isJet) size = 28;
         
-        return { icon, color, size };
+        return { svg, color, size };
     }
     
     function updateFlightsOnMap() {
         flightsLayer.clearLayers();
         
+        const zoom = map.getZoom();
+        const scaleFactor = Math.max(0.6, Math.min(1.5, zoom / 8));
+
         filteredFlights.forEach(flight => {
             if (!flight.latitude || !flight.longitude) return;
             
-            const { icon: iconClass, color, size } = getAircraftIcon(flight);
+            const { svg, color, size } = getAircraftIcon(flight);
             const rotation = flight.heading || 0;
+            const currentSize = size * scaleFactor;
             
             const icon = L.divIcon({
                 className: 'aircraft-marker',
-                html: `<div class="aircraft-icon" style="transform: rotate(${rotation}deg); color: ${color}; font-size: ${size}px;">
-                         <i class="fas ${iconClass}"></i>
+                html: `<div class="aircraft-icon-svg" style="transform: rotate(${rotation}deg); color: ${color}; width: ${currentSize}px; height: ${currentSize}px;">
+                         ${svg}
                        </div>`,
-                iconSize: [size + 4, size + 4],
-                iconAnchor: [(size + 4) / 2, (size + 4) / 2]
+                iconSize: [currentSize + 20, currentSize + 20],
+                iconAnchor: [(currentSize + 20) / 2, (currentSize + 20) / 2]
             });
             
             const marker = L.marker([flight.latitude, flight.longitude], { icon });
             
             const operator = flight.aircraft?.operator || '';
-            const logoHtml = operator ? `<div class="text-xs font-bold text-primary-400 mb-1"><i class="fas fa-airline"></i> ${operator}</div>` : '';
+            const iata = flight.aircraft?.airline_iata || '';
 
+            // Smart Label (Logo, Callsign, Stats)
+            const logoUrl = iata ? `https://content.airhex.com/content/logos/airlines_${iata}_200_200_s.png` : '';
+            const logoImg = logoUrl ? `<img src="${logoUrl}" class="smart-label-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : '';
+            const operatorText = `<span style="${logoUrl ? 'display:none' : ''}" class="text-[9px] text-gray-300 truncate max-w-[80px]">${operator}</span>`;
+
+            const smartLabelHtml = `
+                <div class="smart-label">
+                    <div class="smart-label-header">
+                        <div class="smart-label-callsign">${flight.callsign}</div>
+                        ${logoImg}
+                        ${operatorText}
+                    </div>
+                    <div class="smart-label-stats">
+                        <span><i class="fas fa-tachometer-alt mr-0.5 text-green-400"></i>${Math.round(flight.ground_speed || 0)}</span>
+                        <span><i class="fas fa-arrows-alt-v mr-0.5 text-yellow-400"></i>FL${Math.round((flight.altitude || 0) / 100)}</span>
+                    </div>
+                </div>
+            `;
+
+            marker.bindTooltip(smartLabelHtml, {
+                permanent: true,
+                direction: 'right',
+                offset: [currentSize / 2 + 5, 0],
+                className: 'leaflet-tooltip-empty' // Use custom class to remove default styles if needed, or override
+            });
+
+            // Enhanced Popup
             const popupContent = `
                 <div class="p-2">
-                    ${logoHtml}
-                    <div class="font-bold text-lg mb-2">${flight.callsign}</div>
-                    <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div><span class="text-gray-400">${i18n.flight}:</span> ${flight.flight_number || '-'}</div>
-                        <div><span class="text-gray-400">Alt:</span> ${Math.round(flight.altitude || 0).toLocaleString()} ft</div>
-                        <div><span class="text-gray-400">${i18n.speed}:</span> ${Math.round(flight.ground_speed || 0)} kts</div>
-                        <div><span class="text-gray-400">${i18n.heading}:</span> ${Math.round(flight.heading || 0)}°</div>
-                        <div><span class="text-gray-400">${i18n.dep}:</span> ${flight.departure || '???'}</div>
-                        <div><span class="text-gray-400">${i18n.arr}:</span> ${flight.arrival || '???'}</div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="font-bold text-lg">${flight.callsign}</div>
+                        ${iata ? `<img src="${logoUrl}" class="h-6 object-contain" onerror="this.style.display='none'">` : ''}
                     </div>
+                    ${operator ? `<div class="text-xs text-primary-400 mb-2 font-semibold">${operator}</div>` : ''}
+
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.dep}</span> ${flight.departure || '???'}</div>
+                        <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.arr}</span> ${flight.arrival || '???'}</div>
+
+                        <div><span class="text-gray-400 text-xs block">Alt</span> ${Math.round(flight.altitude || 0).toLocaleString()} ft</div>
+                        <div><span class="text-gray-400 text-xs block">${i18n.speed}</span> ${Math.round(flight.ground_speed || 0)} kts</div>
+                        <div><span class="text-gray-400 text-xs block">${i18n.heading}</span> ${Math.round(flight.heading || 0)}°</div>
+                        <div><span class="text-gray-400 text-xs block">Squawk</span> ${flight.squawk || '-'}</div>
+                    </div>
+
                     ${flight.aircraft ? `
                     <div class="mt-2 pt-2 border-t border-dark-100 text-sm">
-                        <div class="text-gray-400">${flight.aircraft.model || '-'} (${flight.aircraft.registration || '-'})</div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">${flight.aircraft.model || '-'}</span>
+                            <span class="font-mono text-gray-300">${flight.aircraft.registration || '-'}</span>
+                        </div>
                     </div>
                     ` : ''}
                     ${flight.in_rdc ? `<div class="mt-2 text-xs text-primary-400"><i class="fas fa-check-circle mr-1"></i>${i18n.in_rdc}</div>` : ''}
@@ -664,27 +834,6 @@
             marker.bindPopup(popupContent, {
                 className: 'flight-info-popup',
                 maxWidth: 300
-            });
-            
-            const dataTag = `
-                <div class="flex flex-col gap-0.5">
-                    <div class="flex items-center gap-2">
-                        <span class="font-bold text-white">${flight.callsign}</span>
-                        ${flight.flight_number ? `<span class="text-xs text-gray-300">${flight.flight_number}</span>` : ''}
-                    </div>
-                    ${operator ? `<div class="text-[9px] text-blue-300 truncate max-w-[100px]">${operator}</div>` : ''}
-                    <div class="flex items-center gap-2 text-[10px] text-gray-300">
-                        <span><i class="fas fa-tachometer-alt mr-0.5 text-green-400"></i>${Math.round(flight.ground_speed || 0)}</span>
-                        <span><i class="fas fa-arrows-alt-v mr-0.5 text-yellow-400"></i>FL${Math.round((flight.altitude || 0) / 100)}</span>
-                    </div>
-                </div>
-            `;
-            
-            marker.bindTooltip(dataTag, {
-                permanent: true,
-                direction: 'right',
-                offset: [12, 0],
-                className: 'aircraft-data-tag'
             });
             
             marker.addTo(flightsLayer);
@@ -710,6 +859,21 @@
         setTimeout(() => {
             map.invalidateSize();
         }, 300);
+    }
+
+    function toggleScan() {
+        const overlay = document.getElementById('radar-scan-overlay');
+        const btn = document.getElementById('btn-scan');
+
+        overlay.classList.toggle('active');
+
+        if (overlay.classList.contains('active')) {
+            btn.classList.add('bg-primary-600', 'text-white');
+            btn.classList.remove('bg-dark-300', 'text-gray-300');
+        } else {
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-dark-300', 'text-gray-300');
+        }
     }
     
     function updateFlightsList() {
