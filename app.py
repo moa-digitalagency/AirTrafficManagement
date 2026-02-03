@@ -121,6 +121,23 @@ def create_app(config_class=Config):
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+
+        # Content Security Policy (CSP)
+        # Note: 'unsafe-inline' is allowed for scripts/styles to maintain compatibility
+        # with existing templates and Leaflet/Chart.js libraries.
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://unpkg.com https://cdn.socket.io; "
+            "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; "
+            "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+            "img-src 'self' data: blob: https://*.openstreetmap.org https://*.cartocdn.com https://content.airhex.com https://openweathermap.org; "
+            "connect-src 'self' ws: wss: https://api.aviationstack.com https://adsbexchange.com https://api.openweathermap.org; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
+        response.headers['Content-Security-Policy'] = csp
+
         return response
 
     @app.errorhandler(404)

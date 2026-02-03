@@ -6,7 +6,7 @@
  * Auditer par : La CyberConfiance, www.cyberconfiance.com
  */
 """
-from flask import Blueprint, render_template, jsonify, request, send_file, flash, redirect, url_for
+from flask import Blueprint, render_template, jsonify, request, send_file, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 import os
@@ -143,12 +143,22 @@ def create():
         for ovf_id in overflight_ids:
             ovf = Overflight.query.get(ovf_id)
             if ovf:
+                # Security Check: Ensure overflight belongs to selected airline
+                if ovf.airline_id != airline_id:
+                    current_app.logger.warning(f"Security Alert: Attempt to bill overflight {ovf.id} (Airline {ovf.airline_id}) to Airline {airline_id}")
+                    continue
+
                 ovf.invoice_id = invoice.id
                 ovf.is_billed = True
         
         for land_id in landing_ids:
             land = Landing.query.get(land_id)
             if land:
+                # Security Check: Ensure landing belongs to selected airline
+                if land.airline_id != airline_id:
+                    current_app.logger.warning(f"Security Alert: Attempt to bill landing {land.id} (Airline {land.airline_id}) to Airline {airline_id}")
+                    continue
+
                 land.invoice_id = invoice.id
                 land.is_billed = True
         

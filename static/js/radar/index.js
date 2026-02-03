@@ -1,3 +1,10 @@
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: index.js
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+
     const i18n = window.radarIndexContext.i18n;
 
     // Aircraft SVGs
@@ -211,7 +218,8 @@
         const currentValue = select.value;
         select.innerHTML = `<option value="all">${i18n.all_operators}</option>`;
         operators.forEach(op => {
-            select.innerHTML += `<option value="${op}">${op}</option>`;
+            const safeOp = window.escapeHtml(op);
+            select.innerHTML += `<option value="${safeOp}">${safeOp}</option>`;
         });
         select.value = currentValue || 'all';
     }
@@ -324,12 +332,12 @@
             // Smart Label (Logo, Callsign, Stats)
             const logoUrl = iata ? `https://content.airhex.com/content/logos/airlines_${iata}_200_200_s.png` : '';
             const logoImg = logoUrl ? `<img src="${logoUrl}" class="smart-label-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` : '';
-            const operatorText = `<span style="${logoUrl ? 'display:none' : ''}" class="text-[9px] text-gray-300 truncate max-w-[80px]">${operator}</span>`;
+            const operatorText = `<span style="${logoUrl ? 'display:none' : ''}" class="text-[9px] text-gray-300 truncate max-w-[80px]">${window.escapeHtml(operator)}</span>`;
 
             const smartLabelHtml = `
                 <div class="smart-label">
                     <div class="smart-label-header">
-                        <div class="smart-label-callsign">${flight.callsign}</div>
+                        <div class="smart-label-callsign">${window.escapeHtml(flight.callsign)}</div>
                         ${logoImg}
                         ${operatorText}
                     </div>
@@ -351,14 +359,14 @@
             const popupContent = `
                 <div class="p-2">
                     <div class="flex items-center justify-between mb-2">
-                        <div class="font-bold text-lg">${flight.callsign}</div>
+                        <div class="font-bold text-lg">${window.escapeHtml(flight.callsign)}</div>
                         ${iata ? `<img src="${logoUrl}" class="h-6 object-contain" onerror="this.style.display='none'">` : ''}
                     </div>
-                    ${operator ? `<div class="text-xs text-primary-400 mb-2 font-semibold">${operator}</div>` : ''}
+                    ${operator ? `<div class="text-xs text-primary-400 mb-2 font-semibold">${window.escapeHtml(operator)}</div>` : ''}
 
                     <div class="grid grid-cols-2 gap-3 text-sm">
-                        <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.dep}</span> ${flight.departure || '???'}</div>
-                        <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.arr}</span> ${flight.arrival || '???'}</div>
+                        <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.dep}</span> ${window.escapeHtml(flight.departure || '???')}</div>
+                        <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.arr}</span> ${window.escapeHtml(flight.arrival || '???')}</div>
 
                         <div><span class="text-gray-400 text-xs block">Alt</span> ${Math.round(flight.altitude || 0).toLocaleString()} ft</div>
                         <div><span class="text-gray-400 text-xs block">${i18n.speed}</span> ${Math.round(flight.ground_speed || 0)} kts</div>
@@ -369,8 +377,8 @@
                     ${flight.aircraft ? `
                     <div class="mt-2 pt-2 border-t border-dark-100 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-400">${flight.aircraft.model || '-'}</span>
-                            <span class="font-mono text-gray-300">${flight.aircraft.registration || '-'}</span>
+                            <span class="text-gray-400">${window.escapeHtml(flight.aircraft.model || '-')}</span>
+                            <span class="font-mono text-gray-300">${window.escapeHtml(flight.aircraft.registration || '-')}</span>
                         </div>
                     </div>
                     ` : ''}
@@ -440,26 +448,31 @@
 
         container.innerHTML = filteredFlights.map(flight => {
             const { color } = getAircraftIcon(flight);
+            const callsign = window.escapeHtml(flight.callsign);
+            const departure = window.escapeHtml(flight.departure || '???');
+            const arrival = window.escapeHtml(flight.arrival || '???');
+            const operator = window.escapeHtml(flight.aircraft?.operator || '');
+
             return `
                 <div class="p-3 rounded-lg hover:bg-dark-300 cursor-pointer transition-colors mb-2"
                      onclick="focusFlight(${flight.latitude}, ${flight.longitude})"
                      data-testid="flight-item-${flight.id}">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="font-medium text-white">${flight.callsign}</span>
+                        <span class="font-medium text-white">${callsign}</span>
                         <div class="flex items-center gap-2">
                             ${flight.in_rdc ? '<i class="fas fa-check-circle text-primary-400 text-xs"></i>' : ''}
                             <span class="w-2 h-2 rounded-full" style="background: ${color}"></span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 text-xs text-gray-400">
-                        <span>${flight.departure || '???'}</span>
+                        <span>${departure}</span>
                         <i class="fas fa-long-arrow-alt-right"></i>
-                        <span>${flight.arrival || '???'}</span>
+                        <span>${arrival}</span>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
                         FL${Math.round((flight.altitude || 0) / 100)} | ${Math.round(flight.ground_speed || 0)} kts | ${Math.round(flight.heading || 0)}°
                     </div>
-                    ${flight.aircraft?.operator ? `<div class="text-xs text-gray-600 mt-1">${flight.aircraft.operator}</div>` : ''}
+                    ${operator ? `<div class="text-xs text-gray-600 mt-1">${operator}</div>` : ''}
                 </div>
             `;
         }).join('');
