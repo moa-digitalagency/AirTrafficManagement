@@ -6,6 +6,7 @@ Air Traffic Management - RDC
 import os
 from datetime import datetime
 from io import BytesIO
+import qrcode
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -14,7 +15,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
-from models import db, Overflight, Landing, TariffConfig, Invoice, SystemConfig
+from models import db, Overflight, Landing, TariffConfig, Invoice, SystemConfig, AuditLog, User, Flight
 
 
 def get_contact_phone():
@@ -30,6 +31,24 @@ def get_tariff(code):
 def get_billing_mode():
     config = SystemConfig.query.filter_by(key='OVERFLIGHT_BILLING_MODE').first()
     return config.value if config else 'DISTANCE'
+
+
+def generate_qr_code(data):
+    """Generate a QR code image and return it as a BytesIO object"""
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
 
 
 def calculate_overflight_cost(ovf):
@@ -112,7 +131,7 @@ def calculate_invoice_amounts(overflight_ids, landing_ids):
     }
 
 
-def generate_invoice_pdf(invoice):
+def generate_invoice_pdf(invoice, generated_by_user=None):
     upload_dir = 'statics/uploads/invoices'
     os.makedirs(upload_dir, exist_ok=True)
     
@@ -149,27 +168,53 @@ def generate_invoice_pdf(invoice):
     
     content = []
     
+    # Header with Logo/Title
     content.append(Paragraph("RÉGIE DES VOIES AÉRIENNES", header_style))
     content.append(Paragraph("République Démocratique du Congo", header_style))
     content.append(Spacer(1, 0.5*cm))
     content.append(Paragraph("FACTURE", title_style))
     content.append(Spacer(1, 0.5*cm))
     
+    # QR Code Generation
+    try:
+        qr_data = f"RVA|{invoice.invoice_number}|{invoice.total_amount}|{invoice.created_at.isoformat()}"
+        qr_buffer = generate_qr_code(qr_data)
+        qr_img = Image(qr_buffer, width=3*cm, height=3*cm)
+        qr_img.hAlign = 'RIGHT'
+    except Exception as e:
+        print(f"Error generating QR: {e}")
+        qr_img = Spacer(1, 1)
+
+    # Info Table with QR Code
     info_data = [
-        ['N° Facture:', invoice.invoice_number, 'Date:', invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else ''],
-        ['Type:', invoice.invoice_type or 'Standard', 'Échéance:', invoice.due_date.strftime('%d/%m/%Y') if invoice.due_date else ''],
-        ['Statut:', invoice.status.upper(), '', ''],
+        ['N° Facture:', invoice.invoice_number, '', ''],
+        ['Date:', invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else '', '', ''],
+        ['Échéance:', invoice.due_date.strftime('%d/%m/%Y') if invoice.due_date else '', '', ''],
+        ['Statut:', invoice.status.upper(), '', '']
     ]
     
-    info_table = Table(info_data, colWidths=[3*cm, 5*cm, 3*cm, 5*cm])
-    info_table.setStyle(TableStyle([
+    # Use a table to layout info (left) and QR (right)
+    # We will just put the info table first, and maybe QR below or aside.
+    # For simplicity, let's put QR code in a separate flowable or create a complex table.
+
+    # Let's create a main table for the header section: [Info Table, QR Code]
+
+    inner_info_table = Table(info_data, colWidths=[3*cm, 5*cm, 1*cm, 1*cm])
+    inner_info_table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
-    content.append(info_table)
+
+    header_layout_data = [[inner_info_table, qr_img]]
+    header_layout = Table(header_layout_data, colWidths=[12*cm, 4*cm])
+    header_layout.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ALIGN', (1,0), (1,0), 'RIGHT'),
+    ]))
+    content.append(header_layout)
+
     content.append(Spacer(1, 0.5*cm))
     
     if invoice.airline:
@@ -254,9 +299,114 @@ def generate_invoice_pdf(invoice):
     phone = get_contact_phone()
     content.append(Paragraph(f"Email: facturation@rva.cd | Tél: {phone}", footer_style))
     
+    # Add Generation Metadata
+    gen_time = datetime.now().strftime("%d/%m/%Y %H:%M")
+    gen_user = generated_by_user.username if generated_by_user else (f"User #{invoice.created_by}" if invoice.created_by else "Système")
+    content.append(Spacer(1, 0.2*cm))
+    content.append(Paragraph(f"Généré le {gen_time} par {gen_user}", footer_style))
+
     doc.build(content)
     
     invoice.pdf_path = filepath
+    invoice.pdf_generated_at = datetime.utcnow()
     db.session.commit()
     
     return filepath
+
+
+def regenerate_invoice(invoice_id, user_id):
+    """
+    Regenerate an invoice: recalculate amounts and generate new PDF.
+    Logs action to AuditLog.
+    """
+    invoice = Invoice.query.get(invoice_id)
+    if not invoice:
+        return False
+
+    # Recalculate amounts
+    overflight_ids = [ovf.id for ovf in invoice.overflights]
+    landing_ids = [land.id for land in invoice.landings]
+
+    amounts = calculate_invoice_amounts(overflight_ids, landing_ids)
+
+    old_total = invoice.total_amount
+
+    invoice.subtotal = amounts['subtotal']
+    invoice.tax_amount = amounts['tax']
+    invoice.total_amount = amounts['total']
+    invoice.updated_at = datetime.utcnow()
+
+    user = User.query.get(user_id)
+
+    log = AuditLog(
+        user_id=user_id,
+        action='regenerate_invoice',
+        entity_type='invoice',
+        entity_id=invoice.id,
+        ip_address='127.0.0.1', # Placeholder, should be passed if possible
+        details=f"Regenerated. Old Total: {old_total}, New Total: {invoice.total_amount}"
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return generate_invoice_pdf(invoice, generated_by_user=user)
+
+
+def trigger_auto_invoice(flight_id):
+    """
+    Automatically create an invoice for a flight if not already billed.
+    Aggregates Landing and Overflight for the same flight.
+    """
+    flight = Flight.query.get(flight_id)
+    if not flight:
+        return None
+
+    # Check for unbilled items
+    unbilled_ovf = Overflight.query.filter_by(flight_id=flight_id, is_billed=False, status='completed').all()
+    unbilled_land = Landing.query.filter_by(flight_id=flight_id, is_billed=False, status='completed').all()
+
+    if not unbilled_ovf and not unbilled_land:
+        return None
+
+    # Check if airline is configured
+    if not flight.airline_id:
+        # Try to find airline from aircraft
+        if flight.aircraft and flight.aircraft.operator_id:
+             flight.airline_id = flight.aircraft.operator_id
+        else:
+             print(f"Skipping invoice for flight {flight.callsign}: No airline identified")
+             return None
+
+    amounts = calculate_invoice_amounts([o.id for o in unbilled_ovf], [l.id for l in unbilled_land])
+
+    invoice_number = f"RVA-AUTO-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
+
+    invoice = Invoice(
+        invoice_number=invoice_number,
+        airline_id=flight.airline_id,
+        invoice_type='auto_flight',
+        subtotal=amounts['subtotal'],
+        tax_amount=amounts['tax'],
+        total_amount=amounts['total'],
+        status='draft',
+        due_date=datetime.now().date(),
+        notes=f"Facture automatique pour vol {flight.callsign}",
+        created_by=None # System
+    )
+
+    db.session.add(invoice)
+    db.session.flush()
+
+    for item in unbilled_ovf:
+        item.invoice_id = invoice.id
+        item.is_billed = True
+
+    for item in unbilled_land:
+        item.invoice_id = invoice.id
+        item.is_billed = True
+
+    db.session.commit()
+
+    generate_invoice_pdf(invoice)
+
+    return invoice

@@ -29,6 +29,7 @@ class Invoice(db.Model):
     paid_date = db.Column(db.Date)
     paid_amount = db.Column(db.Float)
     payment_reference = db.Column(db.String(100))
+    payment_proof_path = db.Column(db.String(255))
     payment_method = db.Column(db.String(50))
     notes = db.Column(db.Text)
     internal_notes = db.Column(db.Text)
