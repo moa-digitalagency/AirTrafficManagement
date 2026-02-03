@@ -11,50 +11,50 @@
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-semibold text-white">
                     <i class="fas fa-file-invoice mr-2 text-primary-400"></i>
-                    Informations de la Facture
+                    {{ t('invoices.invoice_info') }}
                 </h3>
                 
                 {% if invoice.status == 'draft' %}
                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-400">
-                    Brouillon
+                    {{ t('invoices.draft') }}
                 </span>
                 {% elif invoice.status == 'sent' %}
                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500/20 text-blue-400">
-                    Envoyée
+                    {{ t('invoices.sent') }}
                 </span>
                 {% elif invoice.status == 'paid' %}
                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 text-green-400">
-                    Payée
+                    {{ t('invoices.paid') }}
                 </span>
                 {% endif %}
             </div>
             
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div class="p-4 bg-dark-300 rounded-lg">
-                    <p class="text-gray-400 text-sm">N° Facture</p>
+                    <p class="text-gray-400 text-sm">{{ t('invoices.number') }}</p>
                     <p class="text-white font-semibold">{{ invoice.invoice_number }}</p>
                 </div>
                 <div class="p-4 bg-dark-300 rounded-lg">
-                    <p class="text-gray-400 text-sm">Type</p>
+                    <p class="text-gray-400 text-sm">{{ t('invoices.type') }}</p>
                     <p class="text-white font-semibold">{{ invoice.invoice_type or 'Standard' }}</p>
                 </div>
                 <div class="p-4 bg-dark-300 rounded-lg">
-                    <p class="text-gray-400 text-sm">Date de création</p>
+                    <p class="text-gray-400 text-sm">{{ t('invoices.created_at') }}</p>
                     <p class="text-white font-semibold">{{ invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else '-' }}</p>
                 </div>
                 <div class="p-4 bg-dark-300 rounded-lg">
-                    <p class="text-gray-400 text-sm">Échéance</p>
+                    <p class="text-gray-400 text-sm">{{ t('invoices.due_date') }}</p>
                     <p class="text-white font-semibold">{{ invoice.due_date.strftime('%d/%m/%Y') if invoice.due_date else '-' }}</p>
                 </div>
             </div>
             
             {% if invoice.airline %}
             <div class="p-4 bg-dark-300 rounded-lg">
-                <h4 class="font-medium text-white mb-2">Client</h4>
+                <h4 class="font-medium text-white mb-2">{{ t('invoices.airline') }}</h4>
                 <p class="text-white">{{ invoice.airline.name }}</p>
                 <p class="text-gray-400 text-sm">{{ invoice.airline.iata_code }} / {{ invoice.airline.icao_code }}</p>
                 {% if invoice.airline.email %}
-                <p class="text-gray-400 text-sm mt-1">{{ invoice.airline.email }}</p>
+                <p class="text-gray-400 text-sm mt-1">{{ t('invoices.client_email') }} {{ invoice.airline.email }}</p>
                 {% endif %}
             </div>
             {% endif %}
@@ -64,7 +64,7 @@
             <div class="p-4 border-b border-dark-100">
                 <h3 class="font-semibold text-white">
                     <i class="fas fa-list mr-2 text-primary-400"></i>
-                    Détails des Services
+                    {{ t('invoices.services_details') }}
                 </h3>
             </div>
             
@@ -72,17 +72,17 @@
                 <table class="w-full">
                     <thead class="bg-dark-300">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Description</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Quantité</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Prix Unitaire</th>
-                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Total</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.description') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.quantity') }}</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.unit_price') }}</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">{{ t('invoices.total') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-dark-100">
                         {% for ovf in invoice.overflights %}
                         <tr>
                             <td class="px-4 py-3">
-                                <span class="text-white">Survol {{ ovf.session_id }}</span>
+                                <span class="text-white">{{ t('invoices.item_overflight') }} {{ ovf.session_id }}</span>
                             </td>
                             <td class="px-4 py-3 text-gray-400">{{ (ovf.distance_km or 0)|round(1) }} km</td>
                             <td class="px-4 py-3 text-gray-400">0.85 USD/km</td>
@@ -92,7 +92,7 @@
                         {% for land in invoice.landings %}
                         <tr>
                             <td class="px-4 py-3">
-                                <span class="text-white">Atterrissage {{ land.airport_icao }}</span>
+                                <span class="text-white">{{ t('invoices.item_landing') }} {{ land.airport_icao }}</span>
                             </td>
                             <td class="px-4 py-3 text-gray-400">1</td>
                             <td class="px-4 py-3 text-gray-400">150.00 USD</td>
@@ -102,7 +102,7 @@
                         {% if not invoice.overflights and not invoice.landings %}
                         <tr>
                             <td colspan="4" class="px-4 py-8 text-center text-gray-400">
-                                Aucun élément
+                                {{ t('invoices.no_items') }}
                             </td>
                         </tr>
                         {% endif %}
@@ -116,21 +116,21 @@
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
             <h3 class="font-semibold text-white mb-4">
                 <i class="fas fa-calculator mr-2 text-primary-400"></i>
-                Montants
+                {{ t('invoices.amounts') }}
             </h3>
             
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-gray-400">Sous-total</span>
+                    <span class="text-gray-400">{{ t('invoices.subtotal') }}</span>
                     <span class="text-white font-medium">{{ "{:,.2f}".format(invoice.subtotal or 0) }} {{ invoice.currency }}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-gray-400">TVA (16%)</span>
+                    <span class="text-gray-400">{{ t('invoices.tax') }}</span>
                     <span class="text-white font-medium">{{ "{:,.2f}".format(invoice.tax_amount or 0) }} {{ invoice.currency }}</span>
                 </div>
                 <hr class="border-dark-100 my-3">
                 <div class="flex items-center justify-between">
-                    <span class="text-white font-semibold">Total TTC</span>
+                    <span class="text-white font-semibold">{{ t('invoices.total_ttc') }}</span>
                     <span class="text-2xl font-bold text-primary-400">{{ "{:,.2f}".format(invoice.total_amount or 0) }} {{ invoice.currency }}</span>
                 </div>
             </div>
@@ -139,14 +139,14 @@
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
             <h3 class="font-semibold text-white mb-4">
                 <i class="fas fa-cogs mr-2 text-primary-400"></i>
-                Actions
+                {{ t('invoices.actions') }}
             </h3>
             
             <div class="space-y-3">
                 <a href="{{ url_for('invoices.download_pdf', invoice_id=invoice.id) }}" 
                    class="flex items-center justify-center gap-2 w-full py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors" data-testid="btn-download-pdf">
                     <i class="fas fa-file-pdf"></i>
-                    <span>Télécharger PDF</span>
+                    <span>{{ t('invoices.download_pdf') }}</span>
                 </a>
                 
                 {% if invoice.status == 'draft' %}
@@ -154,7 +154,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors" data-testid="btn-send">
                         <i class="fas fa-paper-plane"></i>
-                        <span>Marquer comme Envoyée</span>
+                        <span>{{ t('invoices.mark_as_sent') }}</span>
                     </button>
                 </form>
                 {% endif %}
@@ -162,7 +162,7 @@
                 {% if invoice.status == 'sent' %}
                 <button type="button" onclick="document.getElementById('paymentModal').classList.remove('hidden')" class="flex items-center justify-center gap-2 w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-colors" data-testid="btn-paid">
                     <i class="fas fa-check"></i>
-                    <span>Marquer comme Payée</span>
+                    <span>{{ t('invoices.mark_as_paid') }}</span>
                 </button>
                 {% endif %}
 
@@ -170,7 +170,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="flex items-center justify-center gap-2 w-full py-2.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 transition-colors">
                         <i class="fas fa-sync-alt"></i>
-                        <span>Régénérer</span>
+                        <span>{{ t('invoices.regenerate') }}</span>
                     </button>
                 </form>
             </div>
@@ -180,18 +180,18 @@
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
             <h3 class="font-semibold text-white mb-4">
                 <i class="fas fa-file-contract mr-2 text-primary-400"></i>
-                Preuve de paiement
+                {{ t('invoices.payment_proof') }}
             </h3>
             <a href="{{ url_for('static', filename=invoice.payment_proof_path.replace('statics/', '')) }}" target="_blank" class="flex items-center gap-2 text-primary-400 hover:text-primary-300">
                 <i class="fas fa-download"></i>
-                <span>Voir le document</span>
+                <span>{{ t('invoices.view_document') }}</span>
             </a>
         </div>
         {% endif %}
         
         <a href="{{ url_for('invoices.index') }}" class="flex items-center justify-center gap-2 p-3 bg-dark-300 text-gray-300 hover:text-white rounded-lg transition-colors">
             <i class="fas fa-arrow-left"></i>
-            <span>Retour à la liste</span>
+            <span>{{ t('invoices.back_to_list') }}</span>
         </a>
     </div>
 </div>
@@ -206,21 +206,21 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="bg-dark-400 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="text-lg leading-6 font-medium text-white" id="modal-title">
-                        Confirmer le paiement
+                        {{ t('invoices.confirm_payment') }}
                     </h3>
                     <div class="mt-2">
                         <p class="text-sm text-gray-300 mb-4">
-                            Veuillez télécharger la preuve de paiement pour valider cette facture.
+                            {{ t('invoices.upload_proof_instruction') }}
                         </p>
                         <input type="file" name="payment_proof" required accept=".pdf,.jpg,.jpeg,.png" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-600 file:text-white hover:file:bg-primary-500">
                     </div>
                 </div>
                 <div class="bg-dark-300 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                     <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
-                        Confirmer
+                        {{ t('invoices.confirm') }}
                     </button>
                     <button type="button" onclick="document.getElementById('paymentModal').classList.add('hidden')" class="mt-3 w-full inline-flex justify-center rounded-md border border-dark-100 shadow-sm px-4 py-2 bg-dark-200 text-base font-medium text-gray-300 hover:text-white focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                        Annuler
+                        {{ t('common.cancel') }}
                     </button>
                 </div>
             </form>

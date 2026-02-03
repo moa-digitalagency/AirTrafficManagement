@@ -16,6 +16,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 from models import db, Overflight, Landing, TariffConfig, Invoice, SystemConfig, AuditLog, User, Flight
+from services.translation_service import t
 
 
 def get_contact_phone():
@@ -231,7 +232,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         content.append(Paragraph(header_address.replace('\n', '<br/>'), header_style))
 
     content.append(Spacer(1, 0.5*cm))
-    content.append(Paragraph("FACTURE", title_style))
+    content.append(Paragraph(t('invoices.invoice').upper(), title_style))
     content.append(Spacer(1, 0.5*cm))
     
     # QR Code Generation
@@ -246,10 +247,10 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
 
     # Info Table with QR Code
     info_data = [
-        ['N° Facture:', invoice.invoice_number, '', ''],
-        ['Date:', invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else '', '', ''],
-        ['Échéance:', invoice.due_date.strftime('%d/%m/%Y') if invoice.due_date else '', '', ''],
-        ['Statut:', invoice.status.upper(), '', '']
+        [f"{t('invoices.number')}:", invoice.invoice_number, '', ''],
+        [f"{t('invoices.date')}:", invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else '', '', ''],
+        [f"{t('invoices.due_date')}:", invoice.due_date.strftime('%d/%m/%Y') if invoice.due_date else '', '', ''],
+        [f"{t('invoices.status')}:", t(f"invoices.{invoice.status}").upper(), '', '']
     ]
     
     # Use a table to layout info (left) and QR (right)
@@ -413,7 +414,7 @@ def regenerate_invoice(invoice_id, user_id):
         entity_type='invoice',
         entity_id=invoice.id,
         ip_address='127.0.0.1', # Placeholder, should be passed if possible
-        details=f"Regenerated. Old Total: {old_total}, New Total: {invoice.total_amount}"
+        changes=f"Regenerated. Old Total: {old_total}, New Total: {invoice.total_amount}"
     )
     db.session.add(log)
     db.session.commit()

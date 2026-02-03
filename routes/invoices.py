@@ -199,7 +199,7 @@ def download_pdf(invoice_id):
         entity_type='invoice',
         entity_id=invoice.id,
         ip_address=request.remote_addr,
-        details=f"Downloaded by {current_user.username}"
+        changes=f"Downloaded by {current_user.username}"
     )
     db.session.add(log)
     db.session.commit()
@@ -306,7 +306,7 @@ def mark_paid(invoice_id):
         entity_type='invoice',
         entity_id=invoice.id,
         ip_address=request.remote_addr,
-        details=f"Payment proof: {filename if file else 'None'}"
+        changes=f"Payment proof: {filename if file else 'None'}"
     )
     db.session.add(log)
     db.session.commit()
