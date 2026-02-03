@@ -201,6 +201,12 @@ def init_database():
         tariffs = [
             TariffConfig(name='Redevance de survol par km', code='SURVOL_KM', value=0.85, unit='USD/km',
                         description='Tarif appliqué par kilomètre de survol du territoire RDC'),
+            TariffConfig(name='Redevance de survol par minute', code='SURVOL_MINUTE', value=12.50, unit='USD/min',
+                        description='Tarif appliqué par minute de survol'),
+            TariffConfig(name='Redevance survol Hybride (Temps)', code='SURVOL_HYBRID_TIME', value=6.00, unit='USD/min',
+                        description='Partie temps pour le mode hybride'),
+            TariffConfig(name='Redevance survol Hybride (Distance)', code='SURVOL_HYBRID_DIST', value=0.40, unit='USD/km',
+                        description='Partie distance pour le mode hybride'),
             TariffConfig(name='Redevance atterrissage base', code='LANDING_BASE', value=150.0, unit='USD',
                         description='Tarif de base pour tout atterrissage sur un aéroport RDC'),
             TariffConfig(name='Stationnement par heure', code='PARKING_HOUR', value=25.0, unit='USD/h',
@@ -356,6 +362,9 @@ def init_database():
         sys_configs = [
             SystemConfig(key='rva_contact_phone', value='+2431234567890',
                          description='Numéro de téléphone de contact sur les factures',
+                         category='invoice', value_type='string', is_editable=True),
+            SystemConfig(key='OVERFLIGHT_BILLING_MODE', value='DISTANCE',
+                         description='Mode de facturation survol: DISTANCE, TIME, HYBRID',
                          category='invoice', value_type='string', is_editable=True),
         ]
 

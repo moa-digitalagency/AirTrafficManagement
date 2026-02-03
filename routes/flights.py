@@ -54,16 +54,31 @@ def detail(flight_id):
 def history():
     start_date = request.args.get('start_date', (datetime.utcnow() - timedelta(days=7)).strftime('%Y-%m-%d'))
     end_date = request.args.get('end_date', datetime.utcnow().strftime('%Y-%m-%d'))
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
     
-    flights = Flight.query.filter(
+    query = Flight.query.filter(
         Flight.scheduled_departure >= start_date,
         Flight.scheduled_departure <= end_date + ' 23:59:59'
-    ).order_by(Flight.scheduled_departure.desc()).all()
+    )
+
+    if search:
+        query = query.filter(
+            db.or_(
+                Flight.callsign.ilike(f'%{search}%'),
+                Flight.flight_number.ilike(f'%{search}%')
+            )
+        )
+
+    flights = query.order_by(Flight.scheduled_departure.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
     
     return render_template('flights/history.html', 
                           flights=flights,
                           start_date=start_date,
-                          end_date=end_date)
+                          end_date=end_date,
+                          search=search)
 
 
 @flights_bp.route('/api/search')
