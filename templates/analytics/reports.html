@@ -19,12 +19,21 @@
 <div class="bg-dark-400 rounded-xl border border-dark-100 p-6 mb-6">
     <form method="GET" action="{{ url_for('analytics.reports') }}" class="flex flex-wrap items-end gap-4">
         <div>
-            <label class="block text-sm text-gray-400 mb-2">Période</label>
+            <label class="block text-sm text-gray-400 mb-2">Période Rapide</label>
             <div class="flex gap-2">
-                <button type="button" onclick="setPeriod('today')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">Aujourd'hui</button>
-                <button type="button" onclick="setPeriod('week')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">7 jours</button>
-                <button type="button" onclick="setPeriod('month')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">30 jours</button>
+                <button type="button" onclick="setDates('today')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">Aujourd'hui</button>
+                <button type="button" onclick="setDates('week')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">7 jours</button>
+                <button type="button" onclick="setDates('month')" class="px-3 py-2 text-sm bg-dark-300 hover:bg-dark-200 text-white border border-dark-100 rounded-lg transition-colors">30 jours</button>
             </div>
+        </div>
+
+        <div>
+            <label class="block text-sm text-gray-400 mb-2">Groupement</label>
+            <select name="period" class="px-4 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="day" {% if period == 'day' %}selected{% endif %}>Par Jour</option>
+                <option value="week" {% if period == 'week' %}selected{% endif %}>Par Semaine</option>
+                <option value="month" {% if period == 'month' %}selected{% endif %}>Par Mois</option>
+            </select>
         </div>
 
         <div>
@@ -100,16 +109,16 @@
 
 {% block scripts %}
 <script>
-    function setPeriod(period) {
+    function setDates(range) {
         const today = new Date();
         const endStr = today.toISOString().split('T')[0];
         let start = new Date();
 
-        if (period === 'today') {
+        if (range === 'today') {
             // start is today
-        } else if (period === 'week') {
+        } else if (range === 'week') {
             start.setDate(today.getDate() - 7);
-        } else if (period === 'month') {
+        } else if (range === 'month') {
             start.setDate(today.getDate() - 30);
         }
 

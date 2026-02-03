@@ -54,6 +54,17 @@ def log_audit_event(action, user_id=None, entity_type=None, entity_id=None,
 
         db.session.add(log)
         db.session.commit()
+
+        # Notify admins for critical events
+        if severity in ['critical', 'error']:
+            from services.notification_service import NotificationService
+            NotificationService.notify_admins(
+                type='security_alert',
+                title=f"Alerte Sécurité: {action}",
+                message=f"Action critique détectée: {action}. Gravité: {severity}. ID Entité: {entity_id}",
+                icon='fas fa-shield-alt'
+            )
+
         return log
     except Exception as e:
         # Fallback logging to ensure we don't crash the application if audit logging fails

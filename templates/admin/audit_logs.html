@@ -47,13 +47,14 @@
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Action</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Entité</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">IP</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Détails</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-dark-100">
                 {% for log in logs.items %}
                 <tr class="hover:bg-dark-300/50 transition-colors" data-testid="log-row-{{ log.id }}">
                     <td class="px-4 py-3 text-gray-400">
-                        {{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') if log.timestamp else '-' }}
+                        {{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') if log.created_at else '-' }}
                     </td>
                     <td class="px-4 py-3">
                         <span class="text-white">{{ log.user.username if log.user else 'Système' }}</span>
@@ -77,6 +78,17 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-3 text-gray-400">{{ log.ip_address or '-' }}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="openLogDetails('{{ log.id }}')" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div id="log-data-{{ log.id }}" class="hidden">
+                            <div data-field="old">{{ log.old_value or '-' }}</div>
+                            <div data-field="new">{{ log.new_value or '-' }}</div>
+                            <div data-field="changes">{{ log.changes or '-' }}</div>
+                            <div data-field="user_agent">{{ log.user_agent or '-' }}</div>
+                        </div>
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
@@ -115,4 +127,75 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Log Details Modal -->
+<div id="logDetailsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 w-full max-w-2xl max-h-[80vh] overflow-y-auto m-4 shadow-2xl">
+        <div class="p-6 border-b border-dark-100 flex items-center justify-between sticky top-0 bg-dark-400">
+            <h3 class="text-lg font-semibold text-white">Détails du Log</h3>
+            <button onclick="closeLogDetails()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <h4 class="text-sm font-medium text-gray-400 uppercase mb-2">Changements (JSON)</h4>
+                <pre id="modal-changes" class="bg-dark-500 p-4 rounded-lg text-xs text-gray-300 overflow-x-auto whitespace-pre-wrap"></pre>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <h4 class="text-sm font-medium text-gray-400 uppercase mb-2">Ancienne Valeur</h4>
+                    <div id="modal-old" class="bg-dark-500 p-4 rounded-lg text-sm text-gray-300 break-words"></div>
+                </div>
+                <div>
+                    <h4 class="text-sm font-medium text-gray-400 uppercase mb-2">Nouvelle Valeur</h4>
+                    <div id="modal-new" class="bg-dark-500 p-4 rounded-lg text-sm text-gray-300 break-words"></div>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-sm font-medium text-gray-400 uppercase mb-2">User Agent</h4>
+                <div id="modal-ua" class="text-sm text-gray-500"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openLogDetails(id) {
+        const dataDiv = document.getElementById('log-data-' + id);
+        if (!dataDiv) return;
+
+        const oldVal = dataDiv.querySelector('[data-field="old"]').textContent;
+        const newVal = dataDiv.querySelector('[data-field="new"]').textContent;
+        const changes = dataDiv.querySelector('[data-field="changes"]').textContent;
+        const ua = dataDiv.querySelector('[data-field="user_agent"]').textContent;
+
+        document.getElementById('modal-old').textContent = oldVal;
+        document.getElementById('modal-new').textContent = newVal;
+        document.getElementById('modal-ua').textContent = ua;
+
+        // Try to pretty print JSON changes
+        try {
+            const json = JSON.parse(changes);
+            document.getElementById('modal-changes').textContent = JSON.stringify(json, null, 2);
+        } catch (e) {
+            document.getElementById('modal-changes').textContent = changes;
+        }
+
+        document.getElementById('logDetailsModal').classList.remove('hidden');
+        document.getElementById('logDetailsModal').classList.add('flex');
+    }
+
+    function closeLogDetails() {
+        document.getElementById('logDetailsModal').classList.add('hidden');
+        document.getElementById('logDetailsModal').classList.remove('flex');
+    }
+
+    // Close on click outside
+    document.getElementById('logDetailsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeLogDetails();
+        }
+    });
+</script>
 {% endblock %}
