@@ -6,8 +6,8 @@ import zipfile
 from io import BytesIO
 from werkzeug.utils import secure_filename
 
-from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog, Flight, Aircraft
-from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts, regenerate_invoice
+from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog, Flight, Aircraft, SystemConfig
+from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts, regenerate_invoice, generate_invoice_number
 from utils.decorators import role_required
 from services.translation_service import t
 
@@ -109,15 +109,19 @@ def create():
             flash(t('invoices.select_airline'), 'error')
             return redirect(url_for('invoices.create'))
         
-        invoice_number = f"RVA-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
+        invoice_number = generate_invoice_number()
         
         amounts = calculate_invoice_amounts(overflight_ids, landing_ids)
         
+        currency_conf = SystemConfig.query.filter_by(key='invoice_currency').first()
+        currency = currency_conf.value if currency_conf else 'USD'
+
         invoice = Invoice(
             invoice_number=invoice_number,
             airline_id=airline_id,
             invoice_type=invoice_type,
             subtotal=amounts['subtotal'],
+            currency=currency,
             tax_amount=amounts['tax'],
             total_amount=amounts['total'],
             status='draft',
@@ -395,13 +399,17 @@ def generate_overflight_invoice(overflight_id):
         if airline:
             airline_id = airline.id
     
-    invoice_number = f"RVA-OVF-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
+    invoice_number = generate_invoice_number(prefix='OVF')
     
+    currency_conf = SystemConfig.query.filter_by(key='invoice_currency').first()
+    currency = currency_conf.value if currency_conf else 'USD'
+
     invoice = Invoice(
         invoice_number=invoice_number,
         airline_id=airline_id,
         invoice_type='overflight',
         subtotal=subtotal,
+        currency=currency,
         tax_amount=tax,
         total_amount=total,
         status='draft',
@@ -479,13 +487,17 @@ def generate_flight_invoice(flight_id):
     # Generate new invoice
     amounts = calculate_invoice_amounts(unbilled_ovf_ids, unbilled_land_ids)
 
-    invoice_number = f"RVA-FLT-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
+    invoice_number = generate_invoice_number(prefix='FLT')
+
+    currency_conf = SystemConfig.query.filter_by(key='invoice_currency').first()
+    currency = currency_conf.value if currency_conf else 'USD'
 
     invoice = Invoice(
         invoice_number=invoice_number,
         airline_id=flight.airline_id,
         invoice_type='flight',
         subtotal=amounts['subtotal'],
+        currency=currency,
         tax_amount=amounts['tax'],
         total_amount=amounts['total'],
         status='draft',

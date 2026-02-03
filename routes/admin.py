@@ -512,6 +512,32 @@ def audit_logs():
 @login_required
 @role_required(['superadmin'])
 def settings():
+    # Ensure default billing configs exist
+    default_configs = [
+        {'key': 'invoice_header_title', 'value': 'RÉGIE DES VOIES AÉRIENNES', 'description': 'Titre En-tête Facture', 'category': 'invoice', 'value_type': 'string'},
+        {'key': 'invoice_header_subtitle', 'value': 'République Démocratique du Congo', 'description': 'Sous-titre En-tête Facture', 'category': 'invoice', 'value_type': 'string'},
+        {'key': 'invoice_header_address', 'value': "Aéroport International de N'Djili - Kinshasa", 'description': 'Adresse En-tête Facture', 'category': 'invoice', 'value_type': 'text'},
+        {'key': 'invoice_footer_legal', 'value': 'Arrêté Ministériel...', 'description': 'Mentions Légales (Pied de page)', 'category': 'invoice', 'value_type': 'text'},
+        {'key': 'invoice_footer_banks', 'value': 'Banque Centrale du Congo: ...', 'description': 'Coordonnées Bancaires', 'category': 'invoice', 'value_type': 'text'},
+        {'key': 'invoice_number_format', 'value': 'RVA-{ANNEE}-{MOIS}-{ID}', 'description': 'Format Numéro Facture', 'category': 'invoice', 'value_type': 'string'},
+        {'key': 'invoice_currency', 'value': 'USD', 'description': 'Devise par défaut', 'category': 'invoice', 'value_type': 'select'},
+    ]
+
+    for conf in default_configs:
+        if not SystemConfig.query.filter_by(key=conf['key']).first():
+            new_conf = SystemConfig(
+                key=conf['key'],
+                value=conf['value'],
+                description=conf['description'],
+                category=conf['category'],
+                value_type=conf['value_type'],
+                is_editable=True
+            )
+            db.session.add(new_conf)
+
+    if db.session.new:
+        db.session.commit()
+
     if request.method == 'POST':
         configs = SystemConfig.query.filter_by(is_editable=True).all()
         changes_count = 0
