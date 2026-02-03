@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Vols - ATM-RDC{% endblock %}
-{% block page_title %}Gestion des Vols{% endblock %}
-{% block page_subtitle %}Liste de tous les vols{% endblock %}
+{% block title %}{{ t('nav.flights') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('flights.title') }}{% endblock %}
+{% block page_subtitle %}{{ t('flights.subtitle') }}{% endblock %}
 
 {% block content %}
 <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
@@ -12,27 +12,27 @@
                 <form method="GET" class="flex items-center gap-2">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="search" value="{{ search }}" placeholder="Rechercher un vol..." 
+                        <input type="text" name="search" value="{{ search }}" placeholder="{{ t('flights.search_placeholder') }}"
                                class="pl-10 pr-4 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 w-64"
                                data-testid="input-search">
                     </div>
                     
                     <select name="status" class="px-3 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500" data-testid="select-status">
-                        <option value="">Tous les statuts</option>
-                        <option value="scheduled" {% if status == 'scheduled' %}selected{% endif %}>Programmé</option>
-                        <option value="in_flight" {% if status == 'in_flight' %}selected{% endif %}>En Vol</option>
-                        <option value="approaching" {% if status == 'approaching' %}selected{% endif %}>Approche</option>
-                        <option value="on_ground" {% if status == 'on_ground' %}selected{% endif %}>Au Sol</option>
+                        <option value="">{{ t('flights.all_statuses') }}</option>
+                        <option value="scheduled" {% if status == 'scheduled' %}selected{% endif %}>{{ t('status.scheduled') }}</option>
+                        <option value="in_flight" {% if status == 'in_flight' %}selected{% endif %}>{{ t('status.in_flight') }}</option>
+                        <option value="approaching" {% if status == 'approaching' %}selected{% endif %}>{{ t('status.approaching') }}</option>
+                        <option value="on_ground" {% if status == 'on_ground' %}selected{% endif %}>{{ t('status.on_ground') }}</option>
                     </select>
                     
                     <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors" data-testid="btn-filter">
-                        <i class="fas fa-filter mr-1"></i> Filtrer
+                        <i class="fas fa-filter mr-1"></i> {{ t('flights.filter') }}
                     </button>
                 </form>
             </div>
             
             <a href="{{ url_for('flights.history') }}" class="px-4 py-2 bg-dark-300 text-gray-300 hover:text-white rounded-lg transition-colors" data-testid="link-history">
-                <i class="fas fa-history mr-1"></i> Historique
+                <i class="fas fa-history mr-1"></i> {{ t('flights.history') }}
             </a>
         </div>
     </div>
@@ -41,12 +41,12 @@
         <table class="w-full">
             <thead class="bg-dark-300">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Vol</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Route</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Horaire</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.flight') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.route') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.type') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.schedule') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.status') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.actions') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-dark-100">
@@ -70,9 +70,9 @@
                             <span class="text-white font-medium">{{ flight.arrival_icao or '???' }}</span>
                         </div>
                         {% if flight.is_domestic %}
-                        <span class="text-xs text-blue-400">Vol Domestique</span>
+                        <span class="text-xs text-blue-400">{{ t('flights.domestic') }}</span>
                         {% else %}
-                        <span class="text-xs text-purple-400">Vol International</span>
+                        <span class="text-xs text-purple-400">{{ t('flights.international') }}</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-4">
@@ -98,19 +98,19 @@
                         {% if flight.flight_status == 'in_flight' %}
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
                             <span class="w-1.5 h-1.5 bg-green-400 rounded-full status-dot"></span>
-                            En Vol
+                            {{ t('status.in_flight') }}
                         </span>
                         {% elif flight.flight_status == 'approaching' %}
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
-                            Approche
+                            {{ t('status.approaching') }}
                         </span>
                         {% elif flight.flight_status == 'scheduled' %}
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
-                            Programmé
+                            {{ t('status.scheduled') }}
                         </span>
                         {% elif flight.flight_status == 'on_ground' %}
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
-                            Au Sol
+                            {{ t('status.on_ground') }}
                         </span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
@@ -121,7 +121,7 @@
                     <td class="px-4 py-4">
                         <a href="{{ url_for('flights.detail', flight_id=flight.id) }}" 
                            class="inline-flex items-center px-3 py-1.5 bg-primary-600/20 text-primary-400 hover:bg-primary-600/30 rounded-lg text-sm transition-colors" data-testid="btn-view-{{ flight.id }}">
-                            <i class="fas fa-eye mr-1"></i> Détails
+                            <i class="fas fa-eye mr-1"></i> {{ t('flights.details') }}
                         </a>
                     </td>
                 </tr>
@@ -129,8 +129,8 @@
                 <tr>
                     <td colspan="6" class="px-4 py-12 text-center text-gray-400">
                         <i class="fas fa-plane-slash text-5xl mb-4 opacity-50"></i>
-                        <p class="text-lg">Aucun vol trouvé</p>
-                        <p class="text-sm mt-1">Modifiez vos filtres de recherche</p>
+                        <p class="text-lg">{{ t('flights.no_flights') }}</p>
+                        <p class="text-sm mt-1">{{ t('flights.check_filters') }}</p>
                     </td>
                 </tr>
                 {% endfor %}
@@ -142,7 +142,7 @@
     <div class="p-4 border-t border-dark-100">
         <div class="flex items-center justify-between">
             <p class="text-sm text-gray-400">
-                Affichage de {{ flights.items|length }} sur {{ flights.total }} vols
+                {{ t('common.showing') }} {{ flights.items|length }} {{ t('common.of') }} {{ flights.total }} {{ t('nav.flights')|lower }}
             </p>
             
             <div class="flex items-center gap-2">

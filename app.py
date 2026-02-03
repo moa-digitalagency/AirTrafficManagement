@@ -19,6 +19,7 @@ from datetime import datetime
 
 from config.settings import Config
 from models import db, User
+from services.translation_service import t
 
 socketio = SocketIO()
 login_manager = LoginManager()
@@ -39,12 +40,17 @@ def create_app(config_class=Config):
     CORS(app)
     
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Veuillez vous connecter pour accéder à cette page.'
-    login_manager.login_message_category = 'warning'
+    # login_manager.login_message handled via unauthorized_handler for localization
     
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        from flask import flash
+        flash(t('auth.login_required'), 'warning')
+        return redirect(url_for('auth.login', next=request.full_path))
     
     from routes.auth import auth_bp
     from routes.dashboard import dashboard_bp
@@ -64,6 +70,12 @@ def create_app(config_class=Config):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(analytics_bp, url_prefix='/analytics')
     
+    @app.route('/lang/<lang_code>')
+    def set_language(lang_code):
+        if lang_code in ['fr', 'en']:
+            session['lang'] = lang_code
+        return redirect(request.referrer or url_for('index'))
+
     @app.route('/')
     def index():
         if current_user.is_authenticated:
@@ -75,8 +87,12 @@ def create_app(config_class=Config):
         return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
     
     @app.context_processor
-    def inject_now():
-        return {'now': datetime.utcnow()}
+    def inject_context():
+        return {
+            'now': datetime.utcnow(),
+            't': t,
+            'current_lang': session.get('lang', 'fr')
+        }
     
     @app.errorhandler(404)
     def not_found_error(error):

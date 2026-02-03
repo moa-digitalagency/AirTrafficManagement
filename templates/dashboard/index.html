@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Tableau de Bord - ATM-RDC{% endblock %}
-{% block page_title %}Tableau de Bord{% endblock %}
-{% block page_subtitle %}Vue d'ensemble du trafic aérien{% endblock %}
+{% block title %}{{ t('dashboard.title') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('dashboard.title') }}{% endblock %}
+{% block page_subtitle %}{{ t('dashboard.subtitle') }}{% endblock %}
 
 {% block content %}
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6 card-glow" data-testid="stat-active-flights">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Vols Actifs</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('dashboard.active_flights') }}</p>
                 <p class="text-3xl font-bold text-white">{{ stats.active_flights }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -18,14 +18,14 @@
         </div>
         <div class="mt-4 flex items-center gap-2 text-sm">
             <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
-            <span class="text-green-400">En temps réel</span>
+            <span class="text-green-400">{{ t('dashboard.real_time') }}</span>
         </div>
     </div>
     
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6" data-testid="stat-flights-today">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Vols du Jour</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('dashboard.flights_today') }}</p>
                 <p class="text-3xl font-bold text-white">{{ stats.flights_today }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -34,14 +34,14 @@
         </div>
         <div class="mt-4 text-sm text-gray-400">
             <i class="fas fa-arrow-up text-green-400 mr-1"></i>
-            Aujourd'hui
+            {{ t('dashboard.today') }}
         </div>
     </div>
     
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6" data-testid="stat-overflights">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Survols</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('dashboard.overflights') }}</p>
                 <p class="text-3xl font-bold text-white">{{ stats.overflights_today }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
@@ -50,14 +50,14 @@
         </div>
         <div class="mt-4 text-sm text-gray-400">
             <i class="fas fa-globe-africa mr-1"></i>
-            Espace aérien RDC
+            {{ t('dashboard.rdc_airspace') }}
         </div>
     </div>
     
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6" data-testid="stat-alerts">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Alertes</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('dashboard.alerts') }}</p>
                 <p class="text-3xl font-bold text-white">{{ stats.unread_alerts }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-{% if stats.unread_alerts > 0 %}red{% else %}gray{% endif %}-500/20 flex items-center justify-center">
@@ -67,10 +67,10 @@
         <div class="mt-4 text-sm text-{% if stats.unread_alerts > 0 %}red{% else %}gray{% endif %}-400">
             {% if stats.unread_alerts > 0 %}
             <i class="fas fa-bell mr-1"></i>
-            Non acquittées
+            {{ t('dashboard.unacknowledged') }}
             {% else %}
             <i class="fas fa-check mr-1"></i>
-            Aucune alerte
+            {{ t('dashboard.no_alerts') }}
             {% endif %}
         </div>
     </div>
@@ -81,10 +81,10 @@
         <div class="p-4 border-b border-dark-100 flex items-center justify-between">
             <h3 class="font-semibold text-white">
                 <i class="fas fa-plane-departure mr-2 text-primary-400"></i>
-                Vols Récents
+                {{ t('dashboard.recent_flights') }}
             </h3>
             <a href="{{ url_for('flights.index') }}" class="text-sm text-primary-400 hover:text-primary-300 transition-colors" data-testid="link-all-flights">
-                Voir tout <i class="fas fa-arrow-right ml-1"></i>
+                {{ t('common.view_all') }} <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>
         
@@ -92,10 +92,10 @@
             <table class="w-full">
                 <thead class="bg-dark-300">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Vol</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Route</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Statut</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Heure</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.flight') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.route') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.status') }}</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{{ t('flights.time') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dark-100">
@@ -123,17 +123,17 @@
                             {% if flight.flight_status == 'in_flight' %}
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
                                 <span class="w-1.5 h-1.5 bg-green-400 rounded-full status-dot"></span>
-                                En Vol
+                                {{ t('status.in_flight') }}
                             </span>
                             {% elif flight.flight_status == 'approaching' %}
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
                                 <span class="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
-                                Approche
+                                {{ t('status.approaching') }}
                             </span>
                             {% elif flight.flight_status == 'scheduled' %}
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
                                 <span class="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
-                                Programmé
+                                {{ t('status.scheduled') }}
                             </span>
                             {% else %}
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
@@ -153,7 +153,7 @@
                     <tr>
                         <td colspan="4" class="px-4 py-8 text-center text-gray-400">
                             <i class="fas fa-plane-slash text-4xl mb-3 opacity-50"></i>
-                            <p>Aucun vol récent</p>
+                            <p>{{ t('dashboard.no_recent_flights') }}</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -166,7 +166,7 @@
         <div class="p-4 border-b border-dark-100">
             <h3 class="font-semibold text-white">
                 <i class="fas fa-bell mr-2 text-red-400"></i>
-                Alertes Récentes
+                {{ t('dashboard.recent_alerts') }}
             </h3>
         </div>
         
@@ -196,7 +196,7 @@
             {% else %}
             <div class="text-center py-8 text-gray-400">
                 <i class="fas fa-check-circle text-4xl mb-3 opacity-50"></i>
-                <p>Aucune alerte active</p>
+                <p>{{ t('dashboard.no_active_alerts') }}</p>
             </div>
             {% endfor %}
         </div>
@@ -207,16 +207,16 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <h3 class="font-semibold text-white mb-4">
             <i class="fas fa-chart-bar mr-2 text-primary-400"></i>
-            Statistiques Rapides
+            {{ t('dashboard.quick_stats') }}
         </h3>
         
         <div class="grid grid-cols-2 gap-4">
             <div class="p-4 bg-dark-300 rounded-lg">
-                <p class="text-gray-400 text-sm">Atterrissages Aujourd'hui</p>
+                <p class="text-gray-400 text-sm">{{ t('dashboard.landings_today') }}</p>
                 <p class="text-2xl font-bold text-white mt-1">{{ stats.landings_today }}</p>
             </div>
             <div class="p-4 bg-dark-300 rounded-lg">
-                <p class="text-gray-400 text-sm">Factures en Attente</p>
+                <p class="text-gray-400 text-sm">{{ t('dashboard.pending_invoices') }}</p>
                 <p class="text-2xl font-bold text-white mt-1">{{ stats.pending_invoices }}</p>
             </div>
         </div>
@@ -225,26 +225,26 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <h3 class="font-semibold text-white mb-4">
             <i class="fas fa-link mr-2 text-primary-400"></i>
-            Accès Rapide
+            {{ t('dashboard.quick_access') }}
         </h3>
         
         <div class="grid grid-cols-2 gap-3">
             <a href="{{ url_for('radar.index') }}" class="flex items-center gap-3 p-3 bg-dark-300 rounded-lg hover:bg-dark-200 transition-colors" data-testid="quick-radar">
                 <i class="fas fa-satellite-dish text-primary-400"></i>
-                <span class="text-white">Radar Live</span>
+                <span class="text-white">{{ t('radar.title') }}</span>
             </a>
             <a href="{{ url_for('radar.overflights') }}" class="flex items-center gap-3 p-3 bg-dark-300 rounded-lg hover:bg-dark-200 transition-colors" data-testid="quick-overflights">
                 <i class="fas fa-route text-purple-400"></i>
-                <span class="text-white">Survols</span>
+                <span class="text-white">{{ t('dashboard.overflights') }}</span>
             </a>
             <a href="{{ url_for('flights.index') }}" class="flex items-center gap-3 p-3 bg-dark-300 rounded-lg hover:bg-dark-200 transition-colors" data-testid="quick-flights">
                 <i class="fas fa-plane text-green-400"></i>
-                <span class="text-white">Tous les Vols</span>
+                <span class="text-white">{{ t('flights.all_flights') }}</span>
             </a>
             {% if current_user.role in ['superadmin', 'billing'] %}
             <a href="{{ url_for('invoices.create') }}" class="flex items-center gap-3 p-3 bg-dark-300 rounded-lg hover:bg-dark-200 transition-colors" data-testid="quick-invoice">
                 <i class="fas fa-file-invoice text-yellow-400"></i>
-                <span class="text-white">Nouvelle Facture</span>
+                <span class="text-white">{{ t('invoices.create_new') }}</span>
             </a>
             {% endif %}
         </div>

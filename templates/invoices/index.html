@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Facturation - ATM-RDC{% endblock %}
-{% block page_title %}Gestion des Factures{% endblock %}
-{% block page_subtitle %}Facturation automatisée{% endblock %}
+{% block title %}{{ t('nav.invoices') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('invoices.title') }}{% endblock %}
+{% block page_subtitle %}{{ t('invoices.subtitle') }}{% endblock %}
 
 {% block content %}
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">En Attente</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('invoices.pending') }}</p>
                 <p class="text-3xl font-bold text-white">{{ pending_count }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
@@ -21,7 +21,7 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Envoyées</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('invoices.sent_plural') }}</p>
                 <p class="text-3xl font-bold text-white">{{ sent_count }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -33,7 +33,7 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Payées</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('invoices.paid_plural') }}</p>
                 <p class="text-3xl font-bold text-white">{{ paid_count }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -44,7 +44,7 @@
     
     <a href="{{ url_for('invoices.create') }}" class="bg-gradient-to-r from-primary-600 to-primary-500 rounded-xl p-6 flex items-center justify-center gap-3 hover:from-primary-500 hover:to-primary-400 transition-all" data-testid="btn-create-invoice">
         <i class="fas fa-plus text-white text-xl"></i>
-        <span class="text-white font-semibold">Nouvelle Facture</span>
+        <span class="text-white font-semibold">{{ t('invoices.create_new') }}</span>
     </a>
 </div>
 
@@ -53,21 +53,21 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <a href="?status=" class="px-3 py-1.5 rounded-lg text-sm transition-colors {% if not status %}bg-primary-600 text-white{% else %}text-gray-400 hover:text-white{% endif %}">
-                    Toutes
+                    {{ t('invoices.all_statuses') }}
                 </a>
                 <a href="?status=draft" class="px-3 py-1.5 rounded-lg text-sm transition-colors {% if status == 'draft' %}bg-yellow-600 text-white{% else %}text-gray-400 hover:text-white{% endif %}">
-                    Brouillons
+                    {{ t('invoices.draft_plural') }}
                 </a>
                 <a href="?status=sent" class="px-3 py-1.5 rounded-lg text-sm transition-colors {% if status == 'sent' %}bg-blue-600 text-white{% else %}text-gray-400 hover:text-white{% endif %}">
-                    Envoyées
+                    {{ t('invoices.sent_plural') }}
                 </a>
                 <a href="?status=paid" class="px-3 py-1.5 rounded-lg text-sm transition-colors {% if status == 'paid' %}bg-green-600 text-white{% else %}text-gray-400 hover:text-white{% endif %}">
-                    Payées
+                    {{ t('invoices.paid_plural') }}
                 </a>
             </div>
             
             <a href="{{ url_for('invoices.tariffs') }}" class="text-sm text-primary-400 hover:text-primary-300">
-                <i class="fas fa-cog mr-1"></i> Tarifs
+                <i class="fas fa-cog mr-1"></i> {{ t('invoices.tariffs') }}
             </a>
         </div>
     </div>
@@ -76,13 +76,13 @@
         <table class="w-full">
             <thead class="bg-dark-300">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">N° Facture</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Compagnie</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Montant</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Date</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Statut</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.number') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.airline') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.type') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.amount') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.date') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.status') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('invoices.actions') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-dark-100">
@@ -98,7 +98,7 @@
                     </td>
                     <td class="px-4 py-4">
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
-                            {{ invoice.invoice_type or 'Standard' }}
+                            {{ invoice.invoice_type or t('invoices.standard') }}
                         </span>
                     </td>
                     <td class="px-4 py-4">
@@ -111,15 +111,15 @@
                     <td class="px-4 py-4">
                         {% if invoice.status == 'draft' %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
-                            Brouillon
+                            {{ t('invoices.draft') }}
                         </span>
                         {% elif invoice.status == 'sent' %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">
-                            Envoyée
+                            {{ t('invoices.sent') }}
                         </span>
                         {% elif invoice.status == 'paid' %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                            Payée
+                            {{ t('invoices.paid') }}
                         </span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400">
@@ -130,7 +130,7 @@
                     <td class="px-4 py-4">
                         <div class="flex items-center gap-2">
                             <a href="{{ url_for('invoices.detail', invoice_id=invoice.id) }}" 
-                               class="p-2 text-gray-400 hover:text-white transition-colors" title="Voir">
+                               class="p-2 text-gray-400 hover:text-white transition-colors" title="{{ t('common.view') }}">
                                 <i class="fas fa-eye"></i>
                             </a>
                             <a href="{{ url_for('invoices.download_pdf', invoice_id=invoice.id) }}" 
@@ -144,7 +144,7 @@
                 <tr>
                     <td colspan="7" class="px-4 py-12 text-center text-gray-400">
                         <i class="fas fa-file-invoice text-5xl mb-4 opacity-50"></i>
-                        <p class="text-lg">Aucune facture</p>
+                        <p class="text-lg">{{ t('invoices.no_invoices') }}</p>
                     </td>
                 </tr>
                 {% endfor %}
@@ -156,7 +156,7 @@
     <div class="p-4 border-t border-dark-100">
         <div class="flex items-center justify-between">
             <p class="text-sm text-gray-400">
-                Page {{ invoices.page }} sur {{ invoices.pages }}
+                {{ t('common.page') }} {{ invoices.page }} {{ t('common.of') }} {{ invoices.pages }}
             </p>
             
             <div class="flex items-center gap-2">
