@@ -1,1 +1,0 @@
-# Language module for internationalization

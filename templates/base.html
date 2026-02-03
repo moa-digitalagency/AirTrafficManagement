@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Système Intégré de Gestion du Trafic Aérien - RDC">
-    <title>{% block title %}ATM-RDC{% endblock %}</title>
+    <meta name="description" content="{{ t('app_subtitle') }}">
+    <title>{% block title %}{{ t('app_name') }}{% endblock %}</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -129,76 +129,76 @@
                         <i class="fas fa-plane text-white text-lg"></i>
                     </div>
                     <div>
-                        <h1 class="font-bold text-lg text-white">ATM-RDC</h1>
-                        <p class="text-xs text-gray-400">Air Traffic Management</p>
+                        <h1 class="font-bold text-lg text-white">{{ t('app_name') }}</h1>
+                        <p class="text-xs text-gray-400">{{ t('app_title') }}</p>
                     </div>
                 </div>
             </div>
             
             <nav class="flex-1 py-4 overflow-y-auto">
                 <div class="px-3 mb-2">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Principal</span>
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('nav.main') }}</span>
                 </div>
                 
                 <a href="{{ url_for('dashboard.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'dashboard' in request.endpoint %}active{% endif %}" data-testid="nav-dashboard">
                     <i class="fas fa-chart-line w-5"></i>
-                    <span>Tableau de Bord</span>
+                    <span>{{ t('nav.dashboard') }}</span>
                 </a>
                 
                 <a href="{{ url_for('radar.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'radar.index' in request.endpoint %}active{% endif %}" data-testid="nav-radar">
                     <i class="fas fa-satellite-dish w-5"></i>
-                    <span>Radar Live</span>
+                    <span>{{ t('nav.live_monitor') }}</span>
                 </a>
                 
                 <a href="{{ url_for('radar.overflights') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'overflight' in request.endpoint %}active{% endif %}" data-testid="nav-overflights">
                     <i class="fas fa-route w-5"></i>
-                    <span>Survols</span>
+                    <span>{{ t('nav.overflights') }}</span>
                 </a>
                 
                 <a href="{{ url_for('radar.terminal') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'terminal' in request.endpoint %}active{% endif %}" data-testid="nav-terminal">
                     <i class="fas fa-tower-broadcast w-5"></i>
-                    <span>Terminal</span>
+                    <span>{{ t('nav.terminal') }}</span>
                 </a>
                 
                 <div class="px-3 mt-6 mb-2">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Gestion</span>
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('nav.management') }}</span>
                 </div>
                 
                 <a href="{{ url_for('flights.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'flights' in request.endpoint %}active{% endif %}" data-testid="nav-flights">
                     <i class="fas fa-plane-departure w-5"></i>
-                    <span>Vols</span>
+                    <span>{{ t('nav.flights') }}</span>
                 </a>
                 
                 {% if current_user.role in ['superadmin', 'billing', 'supervisor'] %}
                 <a href="{{ url_for('invoices.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'invoices' in request.endpoint %}active{% endif %}" data-testid="nav-invoices">
                     <i class="fas fa-file-invoice-dollar w-5"></i>
-                    <span>Facturation</span>
+                    <span>{{ t('nav.invoices') }}</span>
                 </a>
                 {% endif %}
                 
                 {% if current_user.role in ['superadmin', 'auditor'] %}
                 <div class="px-3 mt-6 mb-2">
-                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</span>
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ t('nav.admin') }}</span>
                 </div>
                 
                 <a href="{{ url_for('admin.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.index' in request.endpoint %}active{% endif %}" data-testid="nav-admin">
                     <i class="fas fa-chart-pie w-5"></i>
-                    <span>Vue d'ensemble</span>
+                    <span>{{ t('nav.overview') }}</span>
                 </a>
 
                 <a href="{{ url_for('admin.settings') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.settings' in request.endpoint %}active{% endif %}" data-testid="nav-settings">
                     <i class="fas fa-cogs w-5"></i>
-                    <span>Configuration</span>
+                    <span>{{ t('nav.settings') }}</span>
                 </a>
                 
                 <a href="{{ url_for('admin.users') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.users' in request.endpoint %}active{% endif %}" data-testid="nav-users">
                     <i class="fas fa-users w-5"></i>
-                    <span>Utilisateurs</span>
+                    <span>{{ t('nav.users') }}</span>
                 </a>
                 
                 <a href="{{ url_for('admin.audit_logs') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'audit' in request.endpoint %}active{% endif %}" data-testid="nav-audit">
                     <i class="fas fa-clipboard-list w-5"></i>
-                    <span>Journal d'Audit</span>
+                    <span>{{ t('nav.audit_logs') }}</span>
                 </a>
                 {% endif %}
             </nav>
@@ -212,7 +212,7 @@
                         <p class="text-sm font-medium text-white truncate">{{ current_user.first_name or current_user.username }}</p>
                         <p class="text-xs text-gray-400 capitalize">{{ current_user.role }}</p>
                     </div>
-                    <a href="{{ url_for('auth.logout') }}" class="p-2 text-gray-400 hover:text-red-400 transition-colors" title="Déconnexion" data-testid="btn-logout">
+                    <a href="{{ url_for('auth.logout') }}" class="p-2 text-gray-400 hover:text-red-400 transition-colors" title="{{ t('auth.logout') }}" data-testid="btn-logout">
                         <i class="fas fa-sign-out-alt"></i>
                     </a>
                 </div>
@@ -223,15 +223,21 @@
             <header class="bg-dark-400 border-b border-dark-100 px-6 py-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-xl font-semibold text-white">{% block page_title %}Dashboard{% endblock %}</h2>
+                        <h2 class="text-xl font-semibold text-white">{% block page_title %}{{ t('dashboard.title') }}{% endblock %}</h2>
                         <p class="text-sm text-gray-400">{% block page_subtitle %}{% endblock %}</p>
                     </div>
                     
                     <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                             <a href="{{ url_for('set_language', lang_code='fr') }}" class="text-sm {% if current_lang == 'fr' %}text-white font-bold{% else %}text-gray-400{% endif %}">FR</a>
+                             <span class="text-gray-600">|</span>
+                             <a href="{{ url_for('set_language', lang_code='en') }}" class="text-sm {% if current_lang == 'en' %}text-white font-bold{% else %}text-gray-400{% endif %}">EN</a>
+                        </div>
+
                         <div class="flex items-center gap-2 text-sm text-gray-400">
                             <i class="fas fa-clock"></i>
                             <span id="current-time">--:--:--</span>
-                            <span>UTC</span>
+                            <span>{{ t('common.time_utc') }}</span>
                         </div>
                         
                         <div class="relative" id="alerts-dropdown">
@@ -243,7 +249,7 @@
                         
                         <div class="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 text-green-400 rounded-full text-sm">
                             <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
-                            <span>Système Actif</span>
+                            <span>{{ t('dashboard.system_active') }}</span>
                         </div>
                     </div>
                 </div>

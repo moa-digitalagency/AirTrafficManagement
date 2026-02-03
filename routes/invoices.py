@@ -6,6 +6,7 @@ import os
 from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog
 from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts
 from utils.decorators import role_required
+from services.translation_service import t
 
 invoices_bp = Blueprint('invoices', __name__)
 
@@ -49,7 +50,7 @@ def create():
         landing_ids = request.form.getlist('landings')
         
         if not airline_id:
-            flash('Veuillez sélectionner une compagnie aérienne.', 'error')
+            flash(t('invoices.select_airline'), 'error')
             return redirect(url_for('invoices.create'))
         
         invoice_number = f"RVA-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
@@ -93,7 +94,7 @@ def create():
         db.session.add(log)
         db.session.commit()
         
-        flash(f'Facture {invoice_number} créée avec succès.', 'success')
+        flash(t('invoices.created_success').format(number=invoice_number), 'success')
         return redirect(url_for('invoices.detail', invoice_id=invoice.id))
     
     airlines = Airline.query.filter_by(is_active=True).all()
@@ -125,7 +126,7 @@ def download_pdf(invoice_id):
     if pdf_path and os.path.exists(pdf_path):
         return send_file(pdf_path, as_attachment=True, download_name=f'{invoice.invoice_number}.pdf')
     
-    flash('Erreur lors de la génération du PDF.', 'error')
+    flash(t('invoices.pdf_error'), 'error')
     return redirect(url_for('invoices.detail', invoice_id=invoice_id))
 
 
@@ -146,7 +147,7 @@ def send_invoice(invoice_id):
     db.session.add(log)
     db.session.commit()
     
-    flash(f'Facture {invoice.invoice_number} marquée comme envoyée.', 'success')
+    flash(t('invoices.marked_sent').format(number=invoice.invoice_number), 'success')
     return redirect(url_for('invoices.detail', invoice_id=invoice_id))
 
 
@@ -168,7 +169,7 @@ def mark_paid(invoice_id):
     db.session.add(log)
     db.session.commit()
     
-    flash(f'Facture {invoice.invoice_number} marquée comme payée.', 'success')
+    flash(t('invoices.marked_paid').format(number=invoice.invoice_number), 'success')
     return redirect(url_for('invoices.detail', invoice_id=invoice_id))
 
 
@@ -204,7 +205,7 @@ def update_tariff(tariff_id):
         db.session.add(log)
         db.session.commit()
         
-        flash(f'Tarif "{tariff.name}" mis à jour.', 'success')
+        flash(t('invoices.tariff_updated').format(name=tariff.name), 'success')
     
     return redirect(url_for('invoices.tariffs'))
 
@@ -217,7 +218,7 @@ def generate_overflight_invoice(overflight_id):
     ovf = Overflight.query.get_or_404(overflight_id)
     
     if ovf.is_billed:
-        return jsonify({'success': False, 'error': 'Déjà facturé'})
+        return jsonify({'success': False, 'error': t('invoices.already_billed')})
     
     def get_tariff(name, default):
         tariff = TariffConfig.query.filter_by(name=name, is_active=True).first()

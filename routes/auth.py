@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 
 from models import db, User, AuditLog
+from services.translation_service import t
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -22,7 +23,7 @@ def login():
         
         if user and user.check_password(password):
             if not user.is_active:
-                flash('Votre compte a été désactivé. Contactez l\'administrateur.', 'error')
+                flash(t('auth.account_disabled'), 'error')
                 return render_template('auth/login.html')
             
             login_user(user, remember=remember)
@@ -42,7 +43,7 @@ def login():
                 return redirect(next_page)
             return redirect(url_for('dashboard.index'))
         
-        flash('Nom d\'utilisateur ou mot de passe incorrect.', 'error')
+        flash(t('auth.invalid_credentials'), 'error')
     
     return render_template('auth/login.html')
 
@@ -60,5 +61,5 @@ def logout():
     db.session.commit()
     
     logout_user()
-    flash('Vous avez été déconnecté avec succès.', 'success')
+    flash(t('auth.logout_success'), 'success')
     return redirect(url_for('auth.login'))

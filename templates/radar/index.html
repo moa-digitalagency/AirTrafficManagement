@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Radar Live - ATM-RDC{% endblock %}
-{% block page_title %}Radar de Surveillance{% endblock %}
-{% block page_subtitle %}Temps réel - Espace aérien RDC{% endblock %}
+{% block title %}{{ t('radar.title') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('radar.live_monitor') }}{% endblock %}
+{% block page_subtitle %}{{ t('dashboard.real_time') }} - {{ t('dashboard.rdc_airspace') }}{% endblock %}
 
 {% block head %}
 <style>
@@ -126,11 +126,11 @@
                 <div class="flex items-center gap-4">
                     <h3 class="font-semibold text-white">
                         <i class="fas fa-radar mr-2 text-primary-400"></i>
-                        Carte Radar
+                        {{ t('radar.map_title') }}
                     </h3>
                     <div class="flex items-center gap-2 text-sm">
                         <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
-                        <span class="text-green-400" id="flights-count" data-testid="text-flights-count">0 vols actifs</span>
+                        <span class="text-green-400" id="flights-count" data-testid="text-flights-count">0 {{ t('radar.flights_active') }}</span>
                     </div>
                     <div class="flex items-center gap-2 text-sm text-gray-400">
                         <i class="fas fa-clock"></i>
@@ -140,16 +140,16 @@
                 
                 <div class="flex items-center gap-2">
                     <button onclick="zoomToRDC()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" data-testid="btn-zoom-rdc">
-                        <i class="fas fa-globe-africa mr-1"></i> RDC
+                        <i class="fas fa-globe-africa mr-1"></i> {{ t('radar.zoom_rdc') }}
                     </button>
                     <button onclick="toggleLayerControl()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" data-testid="btn-layers">
-                        <i class="fas fa-layer-group mr-1"></i> Couches
+                        <i class="fas fa-layer-group mr-1"></i> {{ t('radar.layers') }}
                     </button>
                     <button onclick="toggleWeather()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" id="btn-weather" data-testid="btn-weather">
-                        <i class="fas fa-cloud mr-1"></i> Météo
+                        <i class="fas fa-cloud mr-1"></i> {{ t('radar.weather') }}
                     </button>
                     <button onclick="refreshFlights()" class="px-3 py-1.5 bg-primary-600 text-white hover:bg-primary-500 rounded-lg text-sm transition-colors" data-testid="btn-refresh">
-                        <i class="fas fa-sync-alt mr-1"></i> Actualiser
+                        <i class="fas fa-sync-alt mr-1"></i> {{ t('radar.refresh') }}
                     </button>
                 </div>
             </div>
@@ -158,33 +158,33 @@
             
             <!-- Layer Control Panel -->
             <div class="layer-control" id="layer-control">
-                <div class="text-white font-medium mb-2 px-2">Couches Carte</div>
+                <div class="text-white font-medium mb-2 px-2">{{ t('radar.layer_control') }}</div>
                 <label>
                     <input type="checkbox" checked id="layer-boundary" onchange="toggleLayer('boundary')">
-                    <span class="text-gray-300 text-sm">Frontières RDC</span>
+                    <span class="text-gray-300 text-sm">{{ t('radar.layer_boundary') }}</span>
                 </label>
                 <label>
                     <input type="checkbox" checked id="layer-airports" onchange="toggleLayer('airports')">
-                    <span class="text-gray-300 text-sm">Aéroports</span>
+                    <span class="text-gray-300 text-sm">{{ t('radar.layer_airports') }}</span>
                 </label>
                 <label>
                     <input type="checkbox" checked id="layer-flights" onchange="toggleLayer('flights')">
-                    <span class="text-gray-300 text-sm">Avions</span>
+                    <span class="text-gray-300 text-sm">{{ t('radar.layer_flights') }}</span>
                 </label>
                 <label>
                     <input type="checkbox" id="layer-weather" onchange="toggleLayer('weather')">
-                    <span class="text-gray-300 text-sm">Météo (Nuages)</span>
+                    <span class="text-gray-300 text-sm">{{ t('radar.layer_weather') }}</span>
                 </label>
                 <label>
                     <input type="checkbox" id="layer-precipitation" onchange="toggleLayer('precipitation')">
-                    <span class="text-gray-300 text-sm">Précipitations</span>
+                    <span class="text-gray-300 text-sm">{{ t('radar.layer_precip') }}</span>
                 </label>
                 <div class="mt-3 px-2">
-                    <div class="text-gray-400 text-xs mb-1">Fond de carte</div>
+                    <div class="text-gray-400 text-xs mb-1">{{ t('radar.basemap') }}</div>
                     <select id="basemap-select" onchange="changeBasemap()" class="w-full px-2 py-1 bg-dark-300 border border-dark-100 rounded text-white text-sm">
-                        <option value="dark">Dark Mode</option>
-                        <option value="satellite">Satellite</option>
-                        <option value="streets">Routes</option>
+                        <option value="dark">{{ t('radar.basemap_dark') }}</option>
+                        <option value="satellite">{{ t('radar.basemap_satellite') }}</option>
+                        <option value="streets">{{ t('radar.basemap_streets') }}</option>
                     </select>
                 </div>
             </div>
@@ -196,14 +196,14 @@
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
             <h4 class="font-semibold text-white mb-4">
                 <i class="fas fa-filter mr-2 text-primary-400"></i>
-                Filtres
+                {{ t('radar.filters') }}
             </h4>
             
             <div class="space-y-4">
                 <!-- Search -->
                 <div>
-                    <label class="block text-sm text-gray-400 mb-2">Recherche</label>
-                    <input type="text" id="filter-search" placeholder="Callsign, vol, opérateur..." 
+                    <label class="block text-sm text-gray-400 mb-2">{{ t('radar.search') }}</label>
+                    <input type="text" id="filter-search" placeholder="{{ t('radar.search_placeholder') }}"
                            class="w-full px-3 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                            onkeyup="applyFilters()" data-testid="input-search">
                 </div>
@@ -211,7 +211,7 @@
                 <!-- Altitude Range -->
                 <div>
                     <label class="block text-sm text-gray-400 mb-2">
-                        Altitude: <span id="altitude-value" class="text-white">0 - 45000 ft</span>
+                        {{ t('flights.altitude') }}: <span id="altitude-value" class="text-white">0 - 45000 ft</span>
                     </label>
                     <div class="flex gap-2 items-center">
                         <span class="text-xs text-gray-500">0</span>
@@ -225,40 +225,40 @@
                 
                 <!-- Operator Filter -->
                 <div>
-                    <label class="block text-sm text-gray-400 mb-2">Opérateur</label>
+                    <label class="block text-sm text-gray-400 mb-2">{{ t('radar.operator') }}</label>
                     <select id="filter-operator" class="w-full px-3 py-2 bg-dark-300 border border-dark-100 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                             onchange="applyFilters()" data-testid="select-operator">
-                        <option value="all">Tous les opérateurs</option>
+                        <option value="all">{{ t('radar.all_operators') }}</option>
                     </select>
                 </div>
                 
                 <!-- Status Filter -->
                 <div>
-                    <label class="block text-sm text-gray-400 mb-2">Statut</label>
+                    <label class="block text-sm text-gray-400 mb-2">{{ t('flights.status') }}</label>
                     <div class="space-y-2">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-green-500 focus:ring-green-500" 
                                    data-status="in_flight" onchange="applyFilters()" data-testid="checkbox-in-flight">
                             <span class="w-2.5 h-2.5 bg-green-400 rounded-full"></span>
-                            <span class="text-sm text-gray-300">En Vol (Croisière)</span>
+                            <span class="text-sm text-gray-300">{{ t('radar.filter_cruise') }}</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-yellow-500 focus:ring-yellow-500" 
                                    data-status="approaching" onchange="applyFilters()" data-testid="checkbox-approaching">
                             <span class="w-2.5 h-2.5 bg-yellow-400 rounded-full"></span>
-                            <span class="text-sm text-gray-300">En Approche</span>
+                            <span class="text-sm text-gray-300">{{ t('radar.filter_approach') }}</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-blue-500 focus:ring-blue-500" 
                                    data-status="on_ground" onchange="applyFilters()" data-testid="checkbox-on-ground">
                             <span class="w-2.5 h-2.5 bg-blue-400 rounded-full"></span>
-                            <span class="text-sm text-gray-300">Au Sol</span>
+                            <span class="text-sm text-gray-300">{{ t('radar.filter_ground') }}</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked class="w-4 h-4 rounded border-dark-100 bg-dark-300 text-primary-500 focus:ring-primary-500" 
                                    data-status="in_rdc" onchange="applyFilters()" data-testid="checkbox-in-rdc">
                             <span class="w-2.5 h-2.5 bg-primary-400 rounded-full"></span>
-                            <span class="text-sm text-gray-300">Dans espace RDC</span>
+                            <span class="text-sm text-gray-300">{{ t('radar.filter_rdc') }}</span>
                         </label>
                     </div>
                 </div>
@@ -269,33 +269,33 @@
         <div class="bg-dark-400 rounded-xl border border-dark-100 p-4">
             <h4 class="font-semibold text-white mb-4">
                 <i class="fas fa-info-circle mr-2 text-primary-400"></i>
-                Légende
+                {{ t('radar.legend') }}
             </h4>
             
             <div class="space-y-3 text-sm">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-plane text-green-400" style="transform: rotate(45deg);"></i>
-                    <span class="text-gray-300">Vol en croisière (FL100+)</span>
+                    <span class="text-gray-300">{{ t('radar.legend_cruise') }}</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <i class="fas fa-plane-departure text-yellow-400"></i>
-                    <span class="text-gray-300">Montée/Descente</span>
+                    <span class="text-gray-300">{{ t('radar.legend_climb') }}</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <i class="fas fa-plane-arrival text-blue-400"></i>
-                    <span class="text-gray-300">En approche</span>
+                    <span class="text-gray-300">{{ t('radar.legend_approach') }}</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <i class="fas fa-plane text-red-400" style="transform: rotate(45deg);"></i>
-                    <span class="text-gray-300">Urgence (Squawk 7700)</span>
+                    <span class="text-gray-300">{{ t('radar.legend_emergency') }}</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <i class="fas fa-helicopter text-purple-400"></i>
-                    <span class="text-gray-300">Hélicoptère</span>
+                    <span class="text-gray-300">{{ t('radar.legend_heli') }}</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <i class="fas fa-circle text-primary-400 text-xs"></i>
-                    <span class="text-gray-300">Aéroport RDC</span>
+                    <span class="text-gray-300">{{ t('radar.legend_airport') }}</span>
                 </div>
             </div>
         </div>
@@ -305,7 +305,7 @@
             <div class="p-4 border-b border-dark-100 flex items-center justify-between">
                 <h4 class="font-semibold text-white">
                     <i class="fas fa-list mr-2 text-primary-400"></i>
-                    Vols Actifs
+                    {{ t('radar.flights_list') }}
                 </h4>
                 <span class="text-xs text-gray-400" id="filtered-count" data-testid="text-filtered-count"></span>
             </div>
@@ -313,7 +313,7 @@
             <div class="flex-1 overflow-y-auto p-2" id="flights-list" data-testid="flights-list">
                 <div class="text-center py-8 text-gray-400">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                    <p class="text-sm">Chargement...</p>
+                    <p class="text-sm">{{ t('common.loading') }}...</p>
                 </div>
             </div>
         </div>
@@ -323,6 +323,22 @@
 
 {% block scripts %}
 <script>
+    const i18n = {
+        flights_active: "{{ t('radar.flights_active') }}",
+        temp: "{{ t('radar.temp') }}",
+        wind: "{{ t('radar.wind') }}",
+        flight: "{{ t('flights.flight') }}", // Vol
+        altitude: "{{ t('flights.altitude') }}", // Altitude (or Abbr)
+        speed: "{{ t('radar.speed_abbr') }}", // Vit/Spd
+        heading: "{{ t('radar.heading') }}",
+        dep: "{{ t('radar.dep') }}",
+        arr: "{{ t('radar.arr') }}",
+        in_rdc: "{{ t('radar.in_rdc_airspace') }}",
+        no_match: "{{ t('radar.no_match') }}",
+        refresh: "{{ t('radar.refresh') }}",
+        all_operators: "{{ t('radar.all_operators') }}"
+    };
+
     let map;
     let flightsLayer;
     let boundaryLayer;
@@ -460,8 +476,8 @@
             
             if (data.weather) {
                 content += `<div class="mt-2 text-sm">
-                    <span class="text-gray-400">Temp:</span> ${data.weather.temperature || '-'}°C |
-                    <span class="text-gray-400">Vent:</span> ${data.weather.wind_speed || '-'} m/s
+                    <span class="text-gray-400">${i18n.temp}:</span> ${data.weather.temperature || '-'}°C |
+                    <span class="text-gray-400">${i18n.wind}:</span> ${data.weather.wind_speed || '-'} m/s
                 </div>`;
             }
             
@@ -487,7 +503,7 @@
             updateOperatorFilter();
             applyFilters();
             
-            document.getElementById('flights-count').textContent = `${flights.length} vols actifs`;
+            document.getElementById('flights-count').textContent = `${flights.length} ${i18n.flights_active}`;
         } catch (e) {
             console.error('Error loading flights:', e);
         }
@@ -498,7 +514,7 @@
         const operators = [...new Set(flights.map(f => f.aircraft?.operator).filter(Boolean))];
         
         const currentValue = select.value;
-        select.innerHTML = '<option value="all">Tous les opérateurs</option>';
+        select.innerHTML = `<option value="all">${i18n.all_operators}</option>`;
         operators.forEach(op => {
             select.innerHTML += `<option value="${op}">${op}</option>`;
         });
@@ -603,12 +619,12 @@
                 <div class="p-2">
                     <div class="font-bold text-lg mb-2">${flight.callsign}</div>
                     <div class="grid grid-cols-2 gap-2 text-sm">
-                        <div><span class="text-gray-400">Vol:</span> ${flight.flight_number || '-'}</div>
+                        <div><span class="text-gray-400">${i18n.flight}:</span> ${flight.flight_number || '-'}</div>
                         <div><span class="text-gray-400">Alt:</span> ${Math.round(flight.altitude || 0).toLocaleString()} ft</div>
-                        <div><span class="text-gray-400">Vit:</span> ${Math.round(flight.ground_speed || 0)} kts</div>
-                        <div><span class="text-gray-400">Cap:</span> ${Math.round(flight.heading || 0)}°</div>
-                        <div><span class="text-gray-400">Dep:</span> ${flight.departure || '???'}</div>
-                        <div><span class="text-gray-400">Arr:</span> ${flight.arrival || '???'}</div>
+                        <div><span class="text-gray-400">${i18n.speed}:</span> ${Math.round(flight.ground_speed || 0)} kts</div>
+                        <div><span class="text-gray-400">${i18n.heading}:</span> ${Math.round(flight.heading || 0)}°</div>
+                        <div><span class="text-gray-400">${i18n.dep}:</span> ${flight.departure || '???'}</div>
+                        <div><span class="text-gray-400">${i18n.arr}:</span> ${flight.arrival || '???'}</div>
                     </div>
                     ${flight.aircraft ? `
                     <div class="mt-2 pt-2 border-t border-dark-100 text-sm">
@@ -616,7 +632,7 @@
                         <div class="text-gray-400">${flight.aircraft.model || '-'} (${flight.aircraft.registration || '-'})</div>
                     </div>
                     ` : ''}
-                    ${flight.in_rdc ? '<div class="mt-2 text-xs text-primary-400"><i class="fas fa-check-circle mr-1"></i>Dans espace aérien RDC</div>' : ''}
+                    ${flight.in_rdc ? `<div class="mt-2 text-xs text-primary-400"><i class="fas fa-check-circle mr-1"></i>${i18n.in_rdc}</div>` : ''}
                 </div>
             `;
             
@@ -650,7 +666,7 @@
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-400">
                     <i class="fas fa-plane-slash text-2xl mb-2"></i>
-                    <p class="text-sm">Aucun vol correspondant</p>
+                    <p class="text-sm">${i18n.no_match}</p>
                 </div>
             `;
             return;
@@ -748,7 +764,7 @@
     function refreshFlights() {
         document.getElementById('btn-refresh').innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> ...';
         loadFlights().then(() => {
-            document.getElementById('btn-refresh').innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Actualiser';
+            document.getElementById('btn-refresh').innerHTML = `<i class="fas fa-sync-alt mr-1"></i> ${i18n.refresh}`;
         });
     }
     
