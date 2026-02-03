@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - ATM-RDC{% endblock %}
+{% block page_title %}Configuration{% endblock %}
+{% block page_subtitle %}Paramètres du système{% endblock %}
+
+{% block content %}
+<div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+    <div class="p-6 border-b border-dark-100">
+        <h3 class="font-semibold text-white">
+            <i class="fas fa-cogs mr-2 text-primary-400"></i>
+            Paramètres Généraux
+        </h3>
+    </div>
+
+    <form method="POST" class="p-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        <div class="space-y-6">
+            {% for config in configs %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start border-b border-dark-100 pb-6 last:border-0 last:pb-0">
+                <div class="md:col-span-1">
+                    <label for="{{ config.key }}" class="block text-sm font-medium text-white mb-1">
+                        {{ config.description or config.key }}
+                    </label>
+                    <p class="text-xs text-gray-500 font-mono">{{ config.key }}</p>
+                    {% if config.category %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-300 mt-1">
+                        {{ config.category }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    {% if config.value_type == 'bool' %}
+                    <select name="{{ config.key }}" id="{{ config.key }}" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+                        <option value="true" {% if config.get_typed_value() == True %}selected{% endif %}>Oui</option>
+                        <option value="false" {% if config.get_typed_value() == False %}selected{% endif %}>Non</option>
+                    </select>
+                    {% else %}
+                    <input type="text" name="{{ config.key }}" id="{{ config.key }}" value="{{ config.value }}"
+                           class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-400">
+                Aucun paramètre configurable trouvé.
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if configs %}
+        <div class="mt-8 flex justify-end">
+            <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i>
+                Enregistrer les modifications
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

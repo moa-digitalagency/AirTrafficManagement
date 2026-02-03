@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, jsonify, request, flash, redirect,
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 
-from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig
+from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig, SystemConfig
 from utils.decorators import role_required
 
 admin_bp = Blueprint('admin', __name__)
@@ -191,3 +191,42 @@ def audit_logs():
     
     return render_template('admin/audit_logs.html', logs=logs, users=users, 
                           selected_user=user_id, selected_action=action)
+
+
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@login_required
+@role_required(['superadmin'])
+def settings():
+    if request.method == 'POST':
+        configs = SystemConfig.query.filter_by(is_editable=True).all()
+        changes_count = 0
+
+        for config in configs:
+            new_value = request.form.get(config.key)
+            if new_value is not None and new_value != config.value:
+                old_value = config.value
+                config.value = new_value
+                config.updated_by = current_user.id
+
+                log = AuditLog(
+                    user_id=current_user.id,
+                    action='update_system_config',
+                    entity_type='system_config',
+                    entity_id=config.id,
+                    old_value=old_value,
+                    new_value=new_value,
+                    ip_address=request.remote_addr
+                )
+                db.session.add(log)
+                changes_count += 1
+
+        if changes_count > 0:
+            db.session.commit()
+            flash(f'{changes_count} paramètre(s) mis à jour.', 'success')
+        else:
+            flash('Aucun changement détecté.', 'info')
+
+        return redirect(url_for('admin.settings'))
+
+    configs = SystemConfig.query.filter_by(is_editable=True).order_by(SystemConfig.category, SystemConfig.key).all()
+    return render_template('admin/settings.html', configs=configs)

@@ -182,8 +182,13 @@
                 </div>
                 
                 <a href="{{ url_for('admin.index') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.index' in request.endpoint %}active{% endif %}" data-testid="nav-admin">
-                    <i class="fas fa-cog w-5"></i>
-                    <span>Paramètres</span>
+                    <i class="fas fa-chart-pie w-5"></i>
+                    <span>Vue d'ensemble</span>
+                </a>
+
+                <a href="{{ url_for('admin.settings') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.settings' in request.endpoint %}active{% endif %}" data-testid="nav-settings">
+                    <i class="fas fa-cogs w-5"></i>
+                    <span>Configuration</span>
                 </a>
                 
                 <a href="{{ url_for('admin.users') }}" class="sidebar-item flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white transition-colors {% if request.endpoint and 'admin.users' in request.endpoint %}active{% endif %}" data-testid="nav-users">
