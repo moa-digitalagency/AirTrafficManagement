@@ -378,6 +378,18 @@ def init_database():
             SystemConfig(key='enabled_languages', value='["fr", "en"]',
                          description='Langues activées',
                          category='system', value_type='json', is_editable=False),
+            SystemConfig(key='unit_altitude', value='ft',
+                         description="Unité d'altitude (ft, m)",
+                         category='display', value_type='select', is_editable=True),
+            SystemConfig(key='unit_speed', value='kts',
+                         description='Unité de vitesse (kts, km/h, Mach)',
+                         category='display', value_type='select', is_editable=True),
+            SystemConfig(key='precision_decimals', value='2',
+                         description="Nombre de décimales pour l'affichage",
+                         category='display', value_type='int', is_editable=True),
+            SystemConfig(key='timezone', value='UTC',
+                         description="Fuseau horaire de l'application",
+                         category='system', value_type='select', is_editable=True),
         ]
 
         for conf in sys_configs:

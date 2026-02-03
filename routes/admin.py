@@ -3,8 +3,14 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime, timedelta
+import pytz
+import json
+import geojson
+from shapely import wkt
+from shapely.geometry import shape
+from geoalchemy2.shape import to_shape
 
-from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig, SystemConfig
+from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig, SystemConfig, Airspace
 from models.user import Role, Permission
 from utils.decorators import role_required
 from services.translation_service import t
@@ -578,7 +584,7 @@ def settings():
         return redirect(url_for('admin.settings'))
 
     configs = SystemConfig.query.filter_by(is_editable=True).order_by(SystemConfig.category, SystemConfig.key).all()
-    return render_template('admin/settings.html', configs=configs)
+    return render_template('admin/settings.html', configs=configs, timezones=pytz.common_timezones)
 
 
 @admin_bp.route('/languages', methods=['GET', 'POST'])
@@ -656,3 +662,85 @@ def languages():
     return render_template('admin/languages.html',
                           available=available_locales,
                           enabled=enabled_locales)
+
+
+@admin_bp.route('/airspace/map')
+@login_required
+@role_required(['superadmin'])
+def airspace_map():
+    airspace = Airspace.query.filter_by(name='RDC Airspace').first()
+
+    airspace_geojson = None
+    if airspace and airspace.geom:
+        try:
+            if isinstance(airspace.geom, str):
+                # Text/WKT
+                geom_shape = wkt.loads(airspace.geom)
+            else:
+                # Geometry object (WKBElement)
+                geom_shape = to_shape(airspace.geom)
+
+            airspace_geojson = geojson.Feature(geometry=geom_shape, properties={})
+        except Exception as e:
+            current_app.logger.error(f"Error converting geometry: {e}")
+
+    return render_template('admin/airspace_map.html', airspace=airspace, geojson=airspace_geojson)
+
+
+@admin_bp.route('/airspace/save', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def save_airspace():
+    data = request.get_json()
+    if not data or 'geojson' not in data:
+        return jsonify({'success': False, 'message': 'Données invalides'}), 400
+
+    geojson_data = data['geojson']
+
+    try:
+        airspace = Airspace.query.filter_by(name='RDC Airspace').first()
+        if not airspace:
+            airspace = Airspace(name='RDC Airspace', type='boundary')
+            db.session.add(airspace)
+
+        # Convert GeoJSON to Shape -> WKT
+        # We process the geometry part of the feature
+        if 'geometry' in geojson_data:
+            geom_shape = shape(geojson_data['geometry'])
+        else:
+             # Assuming raw geometry passed or FeatureCollection handling needed?
+             # Leaflet Draw usually returns FeatureCollection or Feature.
+             # We assume we get a Feature or Geometry.
+             # If FeatureCollection, take the first feature?
+             if geojson_data.get('type') == 'FeatureCollection':
+                 geom_shape = shape(geojson_data['features'][0]['geometry'])
+             elif geojson_data.get('type') == 'Feature':
+                 geom_shape = shape(geojson_data['geometry'])
+             else:
+                 geom_shape = shape(geojson_data)
+
+        wkt_str = geom_shape.wkt
+
+        # Update model
+        # SQLAlchemy/GeoAlchemy2 handles WKT assignment to Geometry column
+        # Or string assignment to Text column.
+        airspace.geom = wkt_str
+
+        # Log action
+        log = AuditLog(
+            user_id=current_user.id,
+            action='update_airspace',
+            entity_type='airspace',
+            entity_id=airspace.id or 0,
+            entity_name=airspace.name,
+            ip_address=request.remote_addr
+        )
+        db.session.add(log)
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Espace aérien mis à jour'})
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error saving airspace: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
