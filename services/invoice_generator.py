@@ -33,6 +33,33 @@ def get_billing_mode():
     return config.value if config else 'DISTANCE'
 
 
+def generate_invoice_number(prefix=None):
+    """
+    Generate invoice number based on system configuration.
+    """
+    config = SystemConfig.query.filter_by(key='invoice_number_format').first()
+    fmt = config.value if config else "RVA-{ANNEE}-{MOIS}-{ID}"
+
+    now = datetime.now()
+    count = Invoice.query.count() + 1
+
+    # Replace placeholders
+    res = fmt.replace('{ANNEE}', now.strftime('%Y'))
+    res = res.replace('{MOIS}', now.strftime('%m'))
+    res = res.replace('{JOUR}', now.strftime('%d'))
+
+    if '{ID}' in res:
+        res = res.replace('{ID}', f"{count:04d}")
+
+    if '{INCREMENT}' in res:
+        res = res.replace('{INCREMENT}', f"{count:04d}")
+
+    if prefix and '{TYPE}' in res:
+         res = res.replace('{TYPE}', prefix)
+
+    return res
+
+
 def generate_qr_code(data):
     """Generate a QR code image and return it as a BytesIO object"""
     qr = qrcode.QRCode(
@@ -165,12 +192,44 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         textColor=colors.HexColor('#666666'),
         alignment=TA_CENTER
     )
+
+    # Fetch Configs
+    header_title_conf = SystemConfig.query.filter_by(key='invoice_header_title').first()
+    header_title = header_title_conf.value if header_title_conf else "RÉGIE DES VOIES AÉRIENNES"
+
+    header_subtitle_conf = SystemConfig.query.filter_by(key='invoice_header_subtitle').first()
+    header_subtitle = header_subtitle_conf.value if header_subtitle_conf else "République Démocratique du Congo"
+
+    header_address_conf = SystemConfig.query.filter_by(key='invoice_header_address').first()
+    header_address = header_address_conf.value if header_address_conf else "Aéroport International de N'Djili - Kinshasa"
+
+    footer_legal_conf = SystemConfig.query.filter_by(key='invoice_footer_legal').first()
+    footer_legal = footer_legal_conf.value if footer_legal_conf else ""
+
+    footer_banks_conf = SystemConfig.query.filter_by(key='invoice_footer_banks').first()
+    footer_banks = footer_banks_conf.value if footer_banks_conf else ""
+
+    logo_path_conf = SystemConfig.query.filter_by(key='logo_path').first()
+    logo_path = logo_path_conf.value if logo_path_conf else None
     
     content = []
     
+    # Logo
+    if logo_path and os.path.exists(os.path.join('static', logo_path)):
+        try:
+            logo = Image(os.path.join('static', logo_path), width=2*cm, height=2*cm)
+            logo.hAlign = 'CENTER'
+            content.append(logo)
+            content.append(Spacer(1, 0.2*cm))
+        except:
+            pass
+
     # Header with Logo/Title
-    content.append(Paragraph("RÉGIE DES VOIES AÉRIENNES", header_style))
-    content.append(Paragraph("République Démocratique du Congo", header_style))
+    content.append(Paragraph(header_title, header_style))
+    content.append(Paragraph(header_subtitle, header_style))
+    if header_address:
+        content.append(Paragraph(header_address.replace('\n', '<br/>'), header_style))
+
     content.append(Spacer(1, 0.5*cm))
     content.append(Paragraph("FACTURE", title_style))
     content.append(Spacer(1, 0.5*cm))
@@ -293,8 +352,18 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         alignment=TA_CENTER
     )
     
+    if footer_legal:
+        content.append(Paragraph(footer_legal.replace('\n', '<br/>'), footer_style))
+        content.append(Spacer(1, 0.2*cm))
+
+    if footer_banks:
+         content.append(Paragraph("<b>Coordonnées Bancaires:</b>", footer_style))
+         content.append(Paragraph(footer_banks.replace('\n', '<br/>'), footer_style))
+         content.append(Spacer(1, 0.2*cm))
+
     content.append(Paragraph("Régie des Voies Aériennes - RDC", footer_style))
-    content.append(Paragraph("Aéroport International de N'Djili - Kinshasa", footer_style))
+    if header_address:
+         content.append(Paragraph(header_address.split('\n')[0], footer_style)) # Simplified address for footer
 
     phone = get_contact_phone()
     content.append(Paragraph(f"Email: facturation@rva.cd | Tél: {phone}", footer_style))
@@ -379,13 +448,18 @@ def trigger_auto_invoice(flight_id):
 
     amounts = calculate_invoice_amounts([o.id for o in unbilled_ovf], [l.id for l in unbilled_land])
 
-    invoice_number = f"RVA-AUTO-{datetime.now().strftime('%Y%m%d')}-{Invoice.query.count() + 1:04d}"
+    invoice_number = generate_invoice_number(prefix='AUTO')
+
+    # Get Currency
+    currency_conf = SystemConfig.query.filter_by(key='invoice_currency').first()
+    currency = currency_conf.value if currency_conf else 'USD'
 
     invoice = Invoice(
         invoice_number=invoice_number,
         airline_id=flight.airline_id,
         invoice_type='auto_flight',
         subtotal=amounts['subtotal'],
+        currency=currency,
         tax_amount=amounts['tax'],
         total_amount=amounts['total'],
         status='draft',
