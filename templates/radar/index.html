@@ -11,6 +11,17 @@
         min-height: 500px;
         border-radius: 12px;
         overflow: hidden;
+        transition: height 0.3s ease;
+    }
+
+    #radar-map.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh !important;
+        z-index: 9999;
+        border-radius: 0;
     }
     
     .aircraft-marker {
@@ -147,6 +158,9 @@
                     </button>
                     <button onclick="toggleWeather()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" id="btn-weather" data-testid="btn-weather">
                         <i class="fas fa-cloud mr-1"></i> {{ t('radar.weather') }}
+                    </button>
+                    <button onclick="toggleFullscreen()" class="px-3 py-1.5 bg-dark-300 text-gray-300 hover:text-white rounded-lg text-sm transition-colors" id="btn-fullscreen" data-testid="btn-fullscreen">
+                        <i class="fas fa-expand mr-1"></i> {{ t('radar.fullscreen') }}
                     </button>
                     <button onclick="refreshFlights()" class="px-3 py-1.5 bg-primary-600 text-white hover:bg-primary-500 rounded-lg text-sm transition-colors" data-testid="btn-refresh">
                         <i class="fas fa-sync-alt mr-1"></i> {{ t('radar.refresh') }}
@@ -336,7 +350,9 @@
         in_rdc: "{{ t('radar.in_rdc_airspace') }}",
         no_match: "{{ t('radar.no_match') }}",
         refresh: "{{ t('radar.refresh') }}",
-        all_operators: "{{ t('radar.all_operators') }}"
+        all_operators: "{{ t('radar.all_operators') }}",
+        fullscreen: "{{ t('radar.fullscreen') }}",
+        exit_fullscreen: "{{ t('radar.exit_fullscreen') }}"
     };
 
     let map;
@@ -574,8 +590,13 @@
         const isClimbing = flight.vertical_speed > 500;
         const isDescending = flight.vertical_speed < -500;
         const isEmergency = flight.squawk === '7700';
-        const isHeli = (flight.aircraft?.type || '').includes('H') || 
-                       (flight.aircraft?.model || '').toLowerCase().includes('heli');
+
+        const type = (flight.aircraft?.type || '').toUpperCase();
+        const model = (flight.aircraft?.model || '').toUpperCase();
+
+        const isHeli = type.includes('H') || model.includes('HELI');
+        const isJet = model.includes('B7') || model.includes('A3') || model.includes('ERJ') || model.includes('CRJ');
+        const isSmall = model.includes('C172') || model.includes('PA28') || model.includes('CESSNA');
         
         let icon = 'fa-plane';
         if (isHeli) icon = 'fa-helicopter';
@@ -588,9 +609,10 @@
         else if (flight.status === 'on_ground') color = '#3b82f6';
         else if (alt < 10000) color = '#38bdf8';
         
-        let size = 16;
-        if (alt > 35000) size = 20;
-        else if (alt > 20000) size = 18;
+        let size = 18; // Default medium
+        if (isHeli) size = 16;
+        else if (isSmall) size = 14;
+        else if (isJet || alt > 30000) size = 24;
         
         return { icon, color, size };
     }
@@ -615,8 +637,12 @@
             
             const marker = L.marker([flight.latitude, flight.longitude], { icon });
             
+            const operator = flight.aircraft?.operator || '';
+            const logoHtml = operator ? `<div class="text-xs font-bold text-primary-400 mb-1"><i class="fas fa-airline"></i> ${operator}</div>` : '';
+
             const popupContent = `
                 <div class="p-2">
+                    ${logoHtml}
                     <div class="font-bold text-lg mb-2">${flight.callsign}</div>
                     <div class="grid grid-cols-2 gap-2 text-sm">
                         <div><span class="text-gray-400">${i18n.flight}:</span> ${flight.flight_number || '-'}</div>
@@ -628,7 +654,6 @@
                     </div>
                     ${flight.aircraft ? `
                     <div class="mt-2 pt-2 border-t border-dark-100 text-sm">
-                        <div>${flight.aircraft.operator || '-'}</div>
                         <div class="text-gray-400">${flight.aircraft.model || '-'} (${flight.aircraft.registration || '-'})</div>
                     </div>
                     ` : ''}
@@ -642,9 +667,16 @@
             });
             
             const dataTag = `
-                <div>
-                    <div class="font-medium">${flight.callsign}</div>
-                    <div class="text-gray-400">FL${Math.round((flight.altitude || 0) / 100)} ${Math.round(flight.ground_speed || 0)}kts</div>
+                <div class="flex flex-col gap-0.5">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-white">${flight.callsign}</span>
+                        ${flight.flight_number ? `<span class="text-xs text-gray-300">${flight.flight_number}</span>` : ''}
+                    </div>
+                    ${operator ? `<div class="text-[9px] text-blue-300 truncate max-w-[100px]">${operator}</div>` : ''}
+                    <div class="flex items-center gap-2 text-[10px] text-gray-300">
+                        <span><i class="fas fa-tachometer-alt mr-0.5 text-green-400"></i>${Math.round(flight.ground_speed || 0)}</span>
+                        <span><i class="fas fa-arrows-alt-v mr-0.5 text-yellow-400"></i>FL${Math.round((flight.altitude || 0) / 100)}</span>
+                    </div>
                 </div>
             `;
             
@@ -657,6 +689,27 @@
             
             marker.addTo(flightsLayer);
         });
+    }
+
+    function toggleFullscreen() {
+        const mapContainer = document.getElementById('radar-map');
+        const btn = document.getElementById('btn-fullscreen');
+
+        mapContainer.classList.toggle('fullscreen');
+
+        if (mapContainer.classList.contains('fullscreen')) {
+            btn.innerHTML = `<i class="fas fa-compress mr-1"></i> ${i18n.exit_fullscreen}`;
+            btn.classList.add('bg-primary-600', 'text-white');
+            btn.classList.remove('bg-dark-300', 'text-gray-300');
+        } else {
+            btn.innerHTML = `<i class="fas fa-expand mr-1"></i> ${i18n.fullscreen}`;
+            btn.classList.remove('bg-primary-600', 'text-white');
+            btn.classList.add('bg-dark-300', 'text-gray-300');
+        }
+
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 300);
     }
     
     function updateFlightsList() {

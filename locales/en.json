@@ -110,7 +110,10 @@
         "heading": "Hdg",
         "dep": "Dep",
         "arr": "Arr",
-        "no_match": "No matching flights"
+        "no_match": "No matching flights",
+        "fullscreen": "Fullscreen",
+        "exit_fullscreen": "Exit Fullscreen",
+        "ground_speed": "Ground Speed"
     },
 
     "flights": {
