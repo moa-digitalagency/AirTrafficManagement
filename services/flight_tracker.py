@@ -378,6 +378,17 @@ def check_overflight_exit(flight_id, lat, lon, alt):
         overflight.distance_km = distance
     
     db.session.commit()
+
+    # Notify billing
+    from services.notification_service import NotificationService
+    flight = Flight.query.get(flight_id)
+    callsign = flight.callsign if flight else "Unknown"
+    NotificationService.notify_billing(
+        type='overflight_completed',
+        title=f"Survol terminé: {callsign}",
+        message=f"Le vol {callsign} a quitté l'espace aérien. Prêt à facturer.",
+        link=f"/radar/overflights"
+    )
     
     return overflight
 
@@ -485,6 +496,14 @@ def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, s
                 landing.touchdown_time = current_time
                 landing.landing_fee = get_tariff_value('LANDING_BASE', 150.0)
                 db.session.commit()
+
+                from services.notification_service import NotificationService
+                NotificationService.notify_billing(
+                    type='flight_landed',
+                    title=f"Atterrissage: {landing.callsign}",
+                    message=f"Atterrissage détecté à {landing.airport_icao}. Facturation atterrissage applicable.",
+                    link=f"/radar/terminal"
+                )
                 return landing
 
         # State: landed -> parking (Taxi/Parking)
@@ -514,6 +533,14 @@ def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, s
 
                 landing.total_fee = (landing.landing_fee or 0) + (landing.parking_fee or 0)
                 db.session.commit()
+
+                from services.notification_service import NotificationService
+                NotificationService.notify_billing(
+                    type='parking_completed',
+                    title=f"Parking terminé: {landing.callsign}",
+                    message=f"Parking terminé à {landing.airport_icao}. Durée: {int(landing.parking_duration_minutes or 0)} min.",
+                    link=f"/radar/terminal"
+                )
                 return landing
 
     return None

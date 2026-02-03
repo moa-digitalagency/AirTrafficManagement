@@ -284,6 +284,7 @@ def reports():
 
     start_str = request.args.get('start_date')
     end_str = request.args.get('end_date')
+    period = request.args.get('period', 'day') # day, week, month
 
     if start_str:
         try:
@@ -318,21 +319,78 @@ def reports():
         Invoice.created_at.between(query_start, query_end)
     ).count()
 
-    # Daily breakdown for chart
-    daily_traffic = db.session.query(
-        func.date(Overflight.created_at).label('date'),
-        func.count(Overflight.id).label('count')
-    ).filter(
-        Overflight.created_at.between(query_start, query_end)
-    ).group_by(
-        func.date(Overflight.created_at)
-    ).order_by('date').all()
+    # Breakdown for chart
+    traffic_data = []
 
-    traffic_data = [{'date': str(row.date), 'count': row.count} for row in daily_traffic]
+    if period == 'month':
+        results = db.session.query(
+            extract('year', Overflight.created_at).label('year'),
+            extract('month', Overflight.created_at).label('month'),
+            func.count(Overflight.id).label('count')
+        ).filter(
+            Overflight.created_at.between(query_start, query_end)
+        ).group_by(
+            extract('year', Overflight.created_at),
+            extract('month', Overflight.created_at)
+        ).order_by('year', 'month').all()
+
+        traffic_data = [{'date': f"{int(r.year)}-{int(r.month):02d}", 'count': r.count} for r in results]
+
+    elif period == 'week':
+        # Week extraction can be tricky across DBs, using ISO week if possible
+        # Or just fallback to python processing if dataset isn't huge (it might be large)
+        # Trying a generic approach: group by year/week
+        # Note: SQLite doesn't support extract('week') directly in all versions/drivers without extensions
+        # We'll use a safer approach for SQLite compatibility if needed, but let's try standard SQLAlchemy extract first.
+        # If it fails, we might catch it. But simpler is to stick to days and aggregate in python if dataset is manageable < 10000 points.
+        # For "Flexible periods", let's assume standard support.
+        try:
+            results = db.session.query(
+                extract('year', Overflight.created_at).label('year'),
+                extract('week', Overflight.created_at).label('week'),
+                func.count(Overflight.id).label('count')
+            ).filter(
+                Overflight.created_at.between(query_start, query_end)
+            ).group_by(
+                extract('year', Overflight.created_at),
+                extract('week', Overflight.created_at)
+            ).order_by('year', 'week').all()
+
+            traffic_data = [{'date': f"{int(r.year)}-W{int(r.week):02d}", 'count': r.count} for r in results]
+        except Exception:
+             # Fallback for SQLite if extract(week) fails
+            daily = db.session.query(
+                func.date(Overflight.created_at).label('date'),
+                func.count(Overflight.id).label('count')
+            ).filter(
+                Overflight.created_at.between(query_start, query_end)
+            ).group_by(func.date(Overflight.created_at)).all()
+
+            # Aggregate by week in python
+            weeks = {}
+            for d in daily:
+                dt = datetime.strptime(d.date, '%Y-%m-%d')
+                wk = dt.strftime('%Y-W%W')
+                weeks[wk] = weeks.get(wk, 0) + d.count
+
+            traffic_data = [{'date': k, 'count': v} for k, v in sorted(weeks.items())]
+
+    else: # Day
+        daily_traffic = db.session.query(
+            func.date(Overflight.created_at).label('date'),
+            func.count(Overflight.id).label('count')
+        ).filter(
+            Overflight.created_at.between(query_start, query_end)
+        ).group_by(
+            func.date(Overflight.created_at)
+        ).order_by('date').all()
+
+        traffic_data = [{'date': str(row.date), 'count': row.count} for row in daily_traffic]
 
     return render_template('analytics/reports.html',
                           start_date=start_date,
                           end_date=end_date,
+                          period=period,
                           overflights_count=overflights_count,
                           total_revenue=total_revenue,
                           flights_count=flights_count,

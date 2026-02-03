@@ -97,7 +97,7 @@
                                 <i class="fas fa-edit"></i>
                             </a>
                             {% if user.id != current_user.id %}
-                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" class="inline">
+                            <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" class="inline" onsubmit="return confirmToggle('{{ 'désactiver' if user.is_active else 'activer' }}', '{{ user.username }}')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 {% if user.is_active %}
                                 <button type="submit" class="px-3 py-1 text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors">
@@ -118,4 +118,10 @@
         </table>
     </div>
 </div>
+
+<script>
+    function confirmToggle(action, username) {
+        return confirm(`Êtes-vous sûr de vouloir ${action} le compte de ${username} ?`);
+    }
+</script>
 {% endblock %}
