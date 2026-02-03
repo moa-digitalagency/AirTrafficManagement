@@ -1,7 +1,10 @@
 """
-Configuration Settings for ATM-RDC
-Air Traffic Management System - Democratic Republic of Congo
-"""
+/* * Nom de l'application : ATM-RDC
+ * Description : Configuration Settings for ATM-RDC
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
 import os
 from dotenv import load_dotenv
 
@@ -9,7 +12,7 @@ load_dotenv()
 
 class Config:
     # Flask Core
-    SECRET_KEY = os.environ.get('SESSION_SECRET', 'atm-rdc-secret-key-2024')
+    SECRET_KEY = os.environ.get('SESSION_SECRET')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
@@ -19,7 +22,12 @@ class Config:
     
     # CSRF Protection
     WTF_CSRF_ENABLED = True
-    WTF_CSRF_SECRET_KEY = os.environ.get('SESSION_SECRET', 'csrf-secret-key')
+    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY', os.environ.get('SESSION_SECRET'))
+
+    # Secure Cookies
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
     
     # ============================================
     # EXTERNAL FLIGHT DATA APIs
@@ -124,11 +132,18 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = False
+    SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-me')
+    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY', 'dev-csrf-secret-change-me')
+    SESSION_COOKIE_SECURE = False  # Dev often runs on HTTP
 
 
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
+
+    def __init__(self):
+        if not self.SECRET_KEY:
+            raise ValueError("No SECRET_KEY set for production configuration")
 
 
 config = {

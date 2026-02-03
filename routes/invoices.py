@@ -1,3 +1,11 @@
+"""
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: invoices.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
 from flask import Blueprint, render_template, jsonify, request, send_file, flash, redirect, url_for
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta

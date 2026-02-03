@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 """
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: init_db.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
+"""
 Script d'initialisation de la base de données PostgreSQL
 Air Traffic Management - RDC (ATM-RDC)
 

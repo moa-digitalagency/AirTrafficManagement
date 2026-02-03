@@ -1,3 +1,11 @@
+"""
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: migrate_payment_proof.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
 from app import create_app
 from models import db
 from sqlalchemy import text

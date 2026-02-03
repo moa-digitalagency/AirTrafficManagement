@@ -1,3 +1,11 @@
+"""
+/* * Nom de l'application : ATM-RDC
+ * Description : Source file: benchmark_optimization.py
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
+"""
 import time
 import sys
 from unittest.mock import MagicMock

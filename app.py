@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """
-Air Traffic Management - RDC (ATM-RDC)
-Application principale Flask avec WebSocket
+/* * Nom de l'application : ATM-RDC
+ * Description : Application principale Flask avec WebSocket
+ * Produit de : MOA Digital Agency, www.myoneart.com
+ * Fait par : Aisance KALONJI, www.aisancekalonji.com
+ * Auditer par : La CyberConfiance, www.cyberconfiance.com
+ */
 
+Air Traffic Management - RDC (ATM-RDC)
 Régie des Voies Aériennes - République Démocratique du Congo
 """
 
@@ -106,6 +111,14 @@ def create_app(config_class=Config):
             'branding': branding
         }
     
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        return response
+
     @app.errorhandler(404)
     def not_found_error(error):
         return render_template('errors/404.html'), 404
@@ -151,4 +164,5 @@ app = create_app()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    socketio.run(app, host='0.0.0.0', port=port, debug=debug_mode)
