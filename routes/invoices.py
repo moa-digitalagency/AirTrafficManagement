@@ -1,14 +1,23 @@
 from flask import Blueprint, render_template, jsonify, request, send_file, flash, redirect, url_for
 from flask_login import login_required, current_user
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
+import zipfile
+from io import BytesIO
+from werkzeug.utils import secure_filename
 
-from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog, Flight
-from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts
+from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog, Flight, Aircraft
+from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts, regenerate_invoice
 from utils.decorators import role_required
 from services.translation_service import t
 
 invoices_bp = Blueprint('invoices', __name__)
+
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @invoices_bp.route('/')
@@ -17,26 +26,73 @@ invoices_bp = Blueprint('invoices', __name__)
 def index():
     page = request.args.get('page', 1, type=int)
     status = request.args.get('status', '')
+    airline_id = request.args.get('airline_id', type=int)
+    date_start = request.args.get('date_start')
+    date_end = request.args.get('date_end')
+    flight_type = request.args.get('flight_type')
+    aircraft_type = request.args.get('aircraft_type')
     
     query = Invoice.query
     
     if status:
         query = query.filter_by(status=status)
+    if airline_id:
+        query = query.filter_by(airline_id=airline_id)
+    if flight_type:
+        query = query.filter_by(invoice_type=flight_type)
+    if aircraft_type:
+        query = query.filter(
+            db.or_(
+                Invoice.overflights.any(Overflight.aircraft.has(type_code=aircraft_type)),
+                Invoice.landings.any(Landing.aircraft.has(type_code=aircraft_type))
+            )
+        )
+    if date_start:
+        try:
+            start_dt = datetime.strptime(date_start, '%Y-%m-%d')
+            query = query.filter(Invoice.created_at >= start_dt)
+        except ValueError:
+            pass
+    if date_end:
+        try:
+            end_dt = datetime.strptime(date_end, '%Y-%m-%d')
+            # Add one day to include the end date fully
+            query = query.filter(Invoice.created_at < end_dt + timedelta(days=1))
+        except ValueError:
+            pass
     
     invoices = query.order_by(Invoice.created_at.desc()).paginate(
         page=page, per_page=20, error_out=False
     )
     
+    # Statistics
     pending_count = Invoice.query.filter_by(status='draft').count()
     sent_count = Invoice.query.filter_by(status='sent').count()
     paid_count = Invoice.query.filter_by(status='paid').count()
     
+    airlines = Airline.query.filter_by(is_active=True).order_by(Airline.name).all()
+
+    # Fetch options for filters
+    flight_types = [r[0] for r in db.session.query(Invoice.invoice_type).distinct().all() if r[0]]
+    aircraft_types = [r[0] for r in db.session.query(Aircraft.type_code).distinct().all() if r[0]]
+
     return render_template('invoices/index.html', 
                           invoices=invoices,
                           status=status,
                           pending_count=pending_count,
                           sent_count=sent_count,
-                          paid_count=paid_count)
+                          paid_count=paid_count,
+                          airlines=airlines,
+                          flight_types=flight_types,
+                          aircraft_types=aircraft_types,
+                          current_filters={
+                              'airline_id': airline_id,
+                              'date_start': date_start,
+                              'date_end': date_end,
+                              'status': status,
+                              'flight_type': flight_type,
+                              'aircraft_type': aircraft_type
+                          })
 
 
 @invoices_bp.route('/create', methods=['GET', 'POST'])
@@ -115,19 +171,76 @@ def detail(invoice_id):
     return render_template('invoices/detail.html', invoice=invoice)
 
 
+@invoices_bp.route('/<int:invoice_id>/regenerate', methods=['POST'])
+@login_required
+@role_required(['superadmin', 'billing'])
+def regenerate(invoice_id):
+    if regenerate_invoice(invoice_id, current_user.id):
+        flash(t('invoices.regenerated_success'), 'success')
+    else:
+        flash(t('invoices.regenerated_error'), 'error')
+    return redirect(url_for('invoices.detail', invoice_id=invoice_id))
+
+
 @invoices_bp.route('/<int:invoice_id>/pdf')
 @login_required
 @role_required(['superadmin', 'billing', 'supervisor'])
 def download_pdf(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
     
-    pdf_path = generate_invoice_pdf(invoice)
+    # Log download
+    log = AuditLog(
+        user_id=current_user.id,
+        action='download_invoice_pdf',
+        entity_type='invoice',
+        entity_id=invoice.id,
+        ip_address=request.remote_addr,
+        details=f"Downloaded by {current_user.username}"
+    )
+    db.session.add(log)
+    db.session.commit()
     
+    if invoice.pdf_path and os.path.exists(invoice.pdf_path):
+        return send_file(invoice.pdf_path, as_attachment=True, download_name=f'{invoice.invoice_number}.pdf')
+
+    # Try to generate if missing
+    pdf_path = generate_invoice_pdf(invoice)
     if pdf_path and os.path.exists(pdf_path):
         return send_file(pdf_path, as_attachment=True, download_name=f'{invoice.invoice_number}.pdf')
     
     flash(t('invoices.pdf_error'), 'error')
     return redirect(url_for('invoices.detail', invoice_id=invoice_id))
+
+
+@invoices_bp.route('/batch-download', methods=['POST'])
+@login_required
+@role_required(['superadmin', 'billing'])
+def batch_download():
+    invoice_ids = request.form.getlist('invoice_ids')
+    if not invoice_ids:
+        flash(t('invoices.no_selection'), 'warning')
+        return redirect(url_for('invoices.index'))
+
+    invoices = Invoice.query.filter(Invoice.id.in_(invoice_ids)).all()
+
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w') as zf:
+        for invoice in invoices:
+            path = invoice.pdf_path
+            if not path or not os.path.exists(path):
+                path = generate_invoice_pdf(invoice)
+
+            if path and os.path.exists(path):
+                zf.write(path, os.path.basename(path))
+
+    memory_file.seek(0)
+
+    return send_file(
+        memory_file,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=f'invoices_batch_{datetime.now().strftime("%Y%m%d%H%M")}.zip'
+    )
 
 
 @invoices_bp.route('/<int:invoice_id>/send', methods=['POST'])
@@ -136,6 +249,7 @@ def download_pdf(invoice_id):
 def send_invoice(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
     invoice.status = 'sent'
+    invoice.sent_at = datetime.utcnow()
     
     log = AuditLog(
         user_id=current_user.id,
@@ -156,6 +270,29 @@ def send_invoice(invoice_id):
 @role_required(['superadmin', 'billing'])
 def mark_paid(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
+
+    # Handle file upload
+    file = request.files.get('payment_proof')
+    if not file:
+        flash(t('invoices.proof_required'), 'error')
+        return redirect(url_for('invoices.detail', invoice_id=invoice_id))
+
+    if file:
+        if not allowed_file(file.filename):
+            flash(t('invoices.invalid_file_type'), 'error')
+            return redirect(url_for('invoices.detail', invoice_id=invoice_id))
+
+        upload_dir = 'statics/uploads/payments'
+        os.makedirs(upload_dir, exist_ok=True)
+
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        new_filename = f"proof_{invoice.invoice_number}_{timestamp}_{filename}"
+
+        filepath = os.path.join(upload_dir, new_filename)
+        file.save(filepath)
+        invoice.payment_proof_path = filepath
+
     invoice.status = 'paid'
     invoice.paid_date = date.today()
     
@@ -164,7 +301,8 @@ def mark_paid(invoice_id):
         action='mark_invoice_paid',
         entity_type='invoice',
         entity_id=invoice.id,
-        ip_address=request.remote_addr
+        ip_address=request.remote_addr,
+        details=f"Payment proof: {filename if file else 'None'}"
     )
     db.session.add(log)
     db.session.commit()

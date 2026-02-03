@@ -14,6 +14,7 @@ from shapely.prepared import prep
 from geoalchemy2.shape import to_shape
 from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig, Airspace
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
+from services.invoice_generator import trigger_auto_invoice
 
 CACHED_RDC_BOUNDARY_GEOM = None
 
@@ -390,6 +391,17 @@ def check_overflight_exit(flight_id, lat, lon, alt):
         link=f"/radar/overflights"
     )
     
+    # Check if there is an active landing for this flight.
+    # If YES, we wait for landing to complete.
+    # If NO, we trigger invoice immediately.
+    active_landing = Landing.query.filter(
+        Landing.flight_id == flight_id,
+        Landing.status != 'completed'
+    ).first()
+
+    if not active_landing:
+        trigger_auto_invoice(flight_id)
+
     return overflight
 
 
@@ -495,6 +507,24 @@ def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, s
                 landing.status = 'landed'
                 landing.touchdown_time = current_time
                 landing.landing_fee = get_tariff_value('LANDING_BASE', 150.0)
+
+                # Close any active overflight for this flight as it has landed
+                active_overflight = Overflight.query.filter_by(
+                    flight_id=flight_id,
+                    status='active'
+                ).first()
+
+                if active_overflight:
+                    active_overflight.exit_lat = lat
+                    active_overflight.exit_lon = lon
+                    active_overflight.exit_alt = alt
+                    active_overflight.exit_time = current_time
+                    active_overflight.status = 'completed'
+
+                    if active_overflight.entry_time:
+                         duration = (active_overflight.exit_time - active_overflight.entry_time).total_seconds() / 60
+                         active_overflight.duration_minutes = duration
+
                 db.session.commit()
 
                 from services.notification_service import NotificationService
@@ -541,6 +571,10 @@ def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, s
                     message=f"Parking terminé à {landing.airport_icao}. Durée: {int(landing.parking_duration_minutes or 0)} min.",
                     link=f"/radar/terminal"
                 )
+
+                # Trigger automatic invoice generation
+                trigger_auto_invoice(flight_id)
+
                 return landing
 
     return None
