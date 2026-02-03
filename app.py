@@ -66,6 +66,8 @@ def create_app(config_class=Config):
     from routes.api import api_bp
     from routes.analytics import analytics_bp
     from routes.notifications import notifications_bp
+    from routes.api_external import api_external_bp
+    from routes.admin_api import admin_api_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(dashboard_bp, url_prefix='/dashboard')
@@ -76,6 +78,8 @@ def create_app(config_class=Config):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(analytics_bp, url_prefix='/analytics')
     app.register_blueprint(notifications_bp, url_prefix='/notifications')
+    app.register_blueprint(api_external_bp, url_prefix='/api/v1/external')
+    app.register_blueprint(admin_api_bp, url_prefix='/admin')
     
     @app.route('/lang/<lang_code>')
     def set_language(lang_code):

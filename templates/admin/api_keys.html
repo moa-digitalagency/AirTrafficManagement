@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des Clés API{% endblock %}
+{% block page_title %}Gestion des Clés API Externe{% endblock %}
+{% block page_subtitle %}Gérez les accès aux systèmes tiers{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h3 class="text-lg font-medium text-white">Clés API Actives</h3>
+        <button onclick="openModal()" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors flex items-center gap-2">
+            <i class="fas fa-plus text-sm"></i>
+            <span>Générer une clé</span>
+        </button>
+    </div>
+
+    <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-400">
+                <thead class="bg-dark-300 text-gray-200 uppercase text-xs">
+                    <tr>
+                        <th class="px-6 py-4 font-semibold">Nom</th>
+                        <th class="px-6 py-4 font-semibold">Clé (Masquée)</th>
+                        <th class="px-6 py-4 font-semibold">Status</th>
+                        <th class="px-6 py-4 font-semibold">Rôle</th>
+                        <th class="px-6 py-4 font-semibold">Rate Limit</th>
+                        <th class="px-6 py-4 font-semibold">Dernier usage</th>
+                        <th class="px-6 py-4 font-semibold">Créé le</th>
+                        <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-100">
+                    {% for key in keys %}
+                    <tr class="hover:bg-dark-300/50 transition-colors">
+                        <td class="px-6 py-4 text-white font-medium">{{ key.name }}</td>
+                        <td class="px-6 py-4 font-mono text-xs">{{ key.to_dict().key_masked }}</td>
+                        <td class="px-6 py-4">
+                            {% if key.status == 'active' %}
+                                <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Actif</span>
+                            {% elif key.status == 'suspended' %}
+                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">Suspendu</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">Révoqué</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">{{ key.role }}</td>
+                        <td class="px-6 py-4">{{ key.rate_limit }} req/min</td>
+                        <td class="px-6 py-4">
+                            {% if key.last_used_at %}
+                                {{ key.last_used_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                <em class="text-gray-600">Jamais</em>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">{{ key.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td class="px-6 py-4 text-right">
+                            {% if key.status != 'revoked' %}
+                            <div class="flex items-center justify-end gap-2">
+                                {% if key.status == 'active' %}
+                                    <button onclick="actionKey({{ key.id }}, 'suspend')" class="p-1 text-yellow-500 hover:text-yellow-400" title="Suspendre">
+                                        <i class="fas fa-pause"></i>
+                                    </button>
+                                {% else %}
+                                    <button onclick="actionKey({{ key.id }}, 'reactivate')" class="p-1 text-green-500 hover:text-green-400" title="Réactiver">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                {% endif %}
+                                <button onclick="actionKey({{ key.id }}, 'revoke')" class="p-1 text-red-500 hover:text-red-400" title="Révoquer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div id="modalOverlay" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all scale-100">
+        <div class="p-6 border-b border-dark-100 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-white">Nouvelle Clé API</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <form id="createKeyForm" class="space-y-4">
+                <div>
+                    <label for="keyName" class="block text-sm font-medium text-gray-400 mb-1">Nom du système / client</label>
+                    <input type="text" id="keyName" name="name" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500" placeholder="ex: Ministère Transports" required>
+                </div>
+                <div>
+                    <label for="rateLimit" class="block text-sm font-medium text-gray-400 mb-1">Rate Limit (req/min)</label>
+                    <input type="number" id="rateLimit" name="rate_limit" value="60" min="1" max="1000" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
+                </div>
+            </form>
+
+            <div id="newKeyDisplay" class="hidden p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p class="text-green-400 font-medium text-sm mb-2">Clé générée ! Copiez-la maintenant.</p>
+                <div class="flex gap-2">
+                    <input type="text" id="generatedKey" readonly class="flex-1 bg-dark-500 border border-dark-100 rounded px-3 py-1 text-sm text-white font-mono">
+                    <button onclick="copyKey()" class="px-3 py-1 bg-dark-300 hover:bg-dark-200 rounded text-sm text-white">Copier</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-dark-100 bg-dark-300/50 flex justify-end gap-3">
+            <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Fermer</button>
+            <button id="btnGenerate" onclick="generateKey()" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors">Générer</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const modal = document.getElementById('modalOverlay');
+    const form = document.getElementById('createKeyForm');
+    const display = document.getElementById('newKeyDisplay');
+    const btn = document.getElementById('btnGenerate');
+
+    function openModal() {
+        modal.classList.remove('hidden');
+        form.reset();
+        form.classList.remove('hidden');
+        display.classList.add('hidden');
+        btn.classList.remove('hidden');
+        btn.disabled = false;
+        btn.innerHTML = 'Générer';
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        if (!display.classList.contains('hidden')) {
+            location.reload();
+        }
+    }
+
+    function generateKey() {
+        const name = document.getElementById('keyName').value;
+        const rateLimit = document.getElementById('rateLimit').value;
+
+        if(!name) {
+            alert("Nom requis");
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('rate_limit', rateLimit);
+
+        // Add CSRF token from meta or window object if available (common in Flask apps)
+        const csrfToken = window.baseContext ? window.baseContext.csrfToken : '';
+
+        fetch('{{ url_for("admin_api.create_api_key") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                form.classList.add('hidden');
+                display.classList.remove('hidden');
+                document.getElementById('generatedKey').value = data.key;
+                btn.classList.add('hidden');
+            } else {
+                alert('Erreur: ' + data.error);
+                btn.disabled = false;
+                btn.innerHTML = 'Générer';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erreur technique');
+            btn.disabled = false;
+            btn.innerHTML = 'Générer';
+        });
+    }
+
+    function copyKey() {
+        const copyText = document.getElementById("generatedKey");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        // Toast or alert could go here
+    }
+
+    function actionKey(id, action) {
+        if(!confirm('Confirmer l\'action : ' + action + ' ?')) return;
+
+        const csrfToken = window.baseContext ? window.baseContext.csrfToken : '';
+        const formData = new FormData();
+        formData.append('action', action);
+
+        fetch(`/admin/settings/api-keys/${id}/action`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        });
+    }
+</script>
+{% endblock %}
