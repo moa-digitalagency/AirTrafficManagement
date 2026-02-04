@@ -24,7 +24,9 @@ class TestConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
-    SERVER_NAME = 'localhost.localdomain'
+    SESSION_COOKIE_SECURE = False
+    SECRET_KEY = 'test-secret-key'
+    WTF_CSRF_SECRET_KEY = 'test-secret-key'
 
 class TestQAAudit(unittest.TestCase):
     def setUp(self):

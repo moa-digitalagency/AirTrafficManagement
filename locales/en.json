@@ -509,6 +509,29 @@
         },
         "generated_success": "Invoice generated successfully!"
     },
+    "units": {
+        "m": "m",
+        "km": "km",
+        "ft": "ft",
+        "fl": "FL",
+        "kts": "kts",
+        "kmh": "km/h",
+        "mach": "Mach"
+    },
+    "invoice_items": {
+        "exempted": "Exempted",
+        "minutes": "{qty} min",
+        "km": "{qty} km",
+        "hybrid_desc": "{time} min / {dist} km",
+        "unit_min": "{rate} USD/min",
+        "unit_km": "{rate} USD/km",
+        "unit_hybrid": "Hyb (T:{time} + D:{dist})"
+    },
+    "pdf": {
+        "regie_name": "Régie des Voies Aériennes - RDC",
+        "email_label": "Email:",
+        "phone_label": "Tel:"
+    },
     "errors": {
         "500_title": "500 - Server Error",
         "500_message": "Internal Server Error",

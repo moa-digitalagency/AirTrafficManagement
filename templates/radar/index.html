@@ -250,7 +250,16 @@
             exit_fullscreen: "{{ t('radar.exit_fullscreen') }}",
             cat: "{{ t('radar.cat') }}",
             squawk: "{{ t('radar.squawk') }}",
-            alt_abbr: "{{ t('radar.alt_abbr') }}"
+            alt_abbr: "{{ t('radar.alt_abbr') }}",
+            units: {
+                m: "{{ t('units.m') }}",
+                km: "{{ t('units.km') }}",
+                ft: "{{ t('units.ft') }}",
+                fl: "{{ t('units.fl') }}",
+                kts: "{{ t('units.kts') }}",
+                kmh: "{{ t('units.kmh') }}",
+                mach: "{{ t('units.mach') }}"
+            }
         },
         airports: {{ airports | tojson | safe }},
         unitSettings: {{ unit_settings | tojson | safe }}
