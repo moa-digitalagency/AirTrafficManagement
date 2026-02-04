@@ -23,6 +23,7 @@ from geoalchemy2.shape import to_shape
 from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig, Airspace
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
 from services.invoice_generator import trigger_auto_invoice
+from services.telegram_service import TelegramService
 
 CACHED_RDC_BOUNDARY_GEOM = None
 
@@ -354,6 +355,12 @@ def check_overflight_entry(flight_id, lat, lon, alt):
     db.session.add(overflight)
     db.session.commit()
     
+    # Notify Telegram: Entry
+    try:
+        TelegramService.notify_entry(flight)
+    except Exception as e:
+        print(f"[FlightTracker] Failed to send Telegram entry notification: {e}")
+
     return overflight
 
 
@@ -399,6 +406,12 @@ def check_overflight_exit(flight_id, lat, lon, alt):
         link=f"/radar/overflights"
     )
     
+    # Notify Telegram: Exit
+    try:
+        TelegramService.notify_exit(overflight)
+    except Exception as e:
+        print(f"[FlightTracker] Failed to send Telegram exit notification: {e}")
+
     # Check if there is an active landing for this flight.
     # If YES, we wait for landing to complete.
     # If NO, we trigger invoice immediately.
