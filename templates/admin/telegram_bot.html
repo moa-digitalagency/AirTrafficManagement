@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications Bot - ATM-RDC{% endblock %}
+{% block page_title %}Gestion du Bot Telegram{% endblock %}
+{% block page_subtitle %}Configuration et abonnés{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Global Configuration -->
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
+        <h3 class="font-semibold text-white mb-4">
+            <i class="fas fa-robot mr-2 text-primary-400"></i> Configuration Globale
+        </h3>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="px-4 py-2 bg-dark-500 rounded-lg border border-dark-300 font-mono text-gray-300">
+                    Token: <span class="text-white font-bold">{{ masked_token }}</span>
+                </div>
+            </div>
+            <form action="{{ url_for('admin.telegram_test') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+                    <i class="fas fa-plug mr-2"></i> Tester la connexion
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+        <div class="p-4 border-b border-dark-100 flex items-center justify-between bg-yellow-500/10">
+            <h3 class="font-semibold text-yellow-500">
+                <i class="fas fa-clock mr-2"></i> Demandes en attente
+            </h3>
+            <span class="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full">{{ pending_subscribers|length }}</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-dark-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Utilisateur Telegram</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Prénom</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Date demande</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-100">
+                    {% for sub in pending_subscribers %}
+                    <tr class="hover:bg-dark-300/50 transition-colors">
+                        <td class="px-4 py-3 text-white font-medium">@{{ sub.username if sub.username else 'Inconnu' }}</td>
+                        <td class="px-4 py-3 text-gray-300">{{ sub.first_name }}</td>
+                        <td class="px-4 py-3 text-gray-400">{{ sub.request_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="px-4 py-3 text-right space-x-2">
+                            <form action="{{ url_for('admin.telegram_approve', id=sub.id) }}" method="POST" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded-lg transition-colors" title="Approuver">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </form>
+                            <form action="{{ url_for('admin.telegram_reject', id=sub.id) }}" method="POST" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors" title="Refuser">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">
+                            Aucune demande en attente.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Active Subscribers -->
+    <div class="bg-dark-400 rounded-xl border border-dark-100 overflow-hidden">
+        <div class="p-4 border-b border-dark-100 flex items-center justify-between">
+            <h3 class="font-semibold text-white">
+                <i class="fas fa-users mr-2 text-primary-400"></i> Abonnés Actifs
+            </h3>
+            <span class="bg-primary-500/20 text-primary-400 text-xs font-bold px-2 py-1 rounded-full">{{ active_subscribers|length }}</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-dark-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Utilisateur</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Approuvé le</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Préférences</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dark-100">
+                    {% for sub in active_subscribers %}
+                    <tr class="hover:bg-dark-300/50 transition-colors">
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-white">@{{ sub.username if sub.username else 'Inconnu' }}</div>
+                            <div class="text-xs text-gray-500">{{ sub.first_name }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-gray-400 text-sm">
+                            {{ sub.approval_date.strftime('%d/%m/%Y') if sub.approval_date else '-' }}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                {% set prefs = sub.preferences or {} %}
+                                <span class="px-2 py-1 rounded text-xs {{ 'bg-blue-500/20 text-blue-400' if prefs.get('notify_entry') else 'bg-gray-700 text-gray-500' }}" title="Entrée Zone">
+                                    <i class="fas fa-plane-arrival"></i>
+                                </span>
+                                <span class="px-2 py-1 rounded text-xs {{ 'bg-blue-500/20 text-blue-400' if prefs.get('notify_exit') else 'bg-gray-700 text-gray-500' }}" title="Sortie Zone">
+                                    <i class="fas fa-plane-departure"></i>
+                                </span>
+                                <span class="px-2 py-1 rounded text-xs {{ 'bg-red-500/20 text-red-400' if prefs.get('notify_alerts') else 'bg-gray-700 text-gray-500' }}" title="Alertes">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                                <span class="px-2 py-1 rounded text-xs {{ 'bg-yellow-500/20 text-yellow-400' if prefs.get('notify_billing') else 'bg-gray-700 text-gray-500' }}" title="Facturation">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-right space-x-2">
+                            <button onclick="openConfigModal('{{ sub.id }}', '{{ sub.username or sub.first_name }}', {{ sub.preferences|tojson }})" class="p-2 text-gray-400 hover:text-white transition-colors" title="Configurer">
+                                <i class="fas fa-cog"></i>
+                            </button>
+
+                            <form action="{{ url_for('admin.telegram_revoke', id=sub.id) }}" method="POST" class="inline" onsubmit="return confirm('Voulez-vous vraiment révoquer l\'accès de cet utilisateur ?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="p-2 text-red-400 hover:text-red-300 transition-colors" title="Révoquer">
+                                    <i class="fas fa-ban"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">
+                            Aucun abonné actif.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Modal -->
+<div id="configModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-4" id="modalTitle">Configuration</h3>
+
+        <form id="configForm" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors cursor-pointer">
+                    <input type="checkbox" name="notify_entry" class="form-checkbox text-primary-500 bg-dark-500 border-dark-300 rounded">
+                    <div class="flex-1">
+                        <div class="text-white font-medium">Entrées de zone</div>
+                        <div class="text-xs text-gray-400">Notif. quand un vol entre dans l'espace aérien</div>
+                    </div>
+                </label>
+
+                <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors cursor-pointer">
+                    <input type="checkbox" name="notify_exit" class="form-checkbox text-primary-500 bg-dark-500 border-dark-300 rounded">
+                    <div class="flex-1">
+                        <div class="text-white font-medium">Sorties de zone</div>
+                        <div class="text-xs text-gray-400">Notif. quand un vol quitte la zone (avec rapport)</div>
+                    </div>
+                </label>
+
+                <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors cursor-pointer">
+                    <input type="checkbox" name="notify_billing" class="form-checkbox text-primary-500 bg-dark-500 border-dark-300 rounded">
+                    <div class="flex-1">
+                        <div class="text-white font-medium">Facturation</div>
+                        <div class="text-xs text-gray-400">Notif. à chaque génération de facture</div>
+                    </div>
+                </label>
+
+                <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors cursor-pointer">
+                    <input type="checkbox" name="notify_alerts" class="form-checkbox text-primary-500 bg-dark-500 border-dark-300 rounded">
+                    <div class="flex-1">
+                        <div class="text-white font-medium">Alertes & Urgences</div>
+                        <div class="text-xs text-gray-400">Sécurité, SOS, pannes techniques</div>
+                    </div>
+                </label>
+
+                <label class="flex items-center space-x-3 p-3 rounded-lg hover:bg-dark-300 transition-colors cursor-pointer">
+                    <input type="checkbox" name="notify_daily_report" class="form-checkbox text-primary-500 bg-dark-500 border-dark-300 rounded">
+                    <div class="flex-1">
+                        <div class="text-white font-medium">Rapport Quotidien</div>
+                        <div class="text-xs text-gray-400">Résumé statistique à 23h59</div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeConfigModal()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openConfigModal(id, username, prefs) {
+        const modal = document.getElementById('configModal');
+        const form = document.getElementById('configForm');
+        const title = document.getElementById('modalTitle');
+
+        // Set Action URL
+        form.action = `/admin/telegram/${id}/configure`;
+
+        // Set Title
+        title.innerText = `Configuration : ${username}`;
+
+        // Set Checkboxes
+        form.elements['notify_entry'].checked = prefs.notify_entry;
+        form.elements['notify_exit'].checked = prefs.notify_exit;
+        form.elements['notify_billing'].checked = prefs.notify_billing;
+        form.elements['notify_alerts'].checked = prefs.notify_alerts;
+        form.elements['notify_daily_report'].checked = prefs.notify_daily_report;
+
+        // Show Modal
+        modal.classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+        document.getElementById('configModal').classList.add('hidden');
+    }
+
+    // Close on click outside
+    document.getElementById('configModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeConfigModal();
+        }
+    });
+</script>
+{% endblock %}
