@@ -15,6 +15,7 @@ import json
 from models import db, Flight, Aircraft, Airport, Airline, Overflight, Landing, Invoice, Alert, TelegramSubscriber, SystemConfig, AuditLog
 from services.telegram_service import TelegramService
 from utils.decorators import role_required
+from utils.system_gate import SystemGate
 
 api_bp = Blueprint('api', __name__)
 
@@ -266,41 +267,21 @@ def approve_telegram_subscriber():
 @api_bp.route('/system/status', methods=['GET'])
 @login_required
 def get_system_status():
-    config = SystemConfig.query.filter_by(key='system_active').first()
-    # Default to True if not set
-    is_active = config.get_typed_value() if config else True
-    return jsonify({'active': is_active})
+    return jsonify({'active': SystemGate.is_active()})
 
-
-@api_bp.route('/system/status', methods=['POST'])
+@api_bp.route('/system/toggle', methods=['POST'])
 @login_required
 @role_required(['superadmin'])
-def update_system_status():
+def toggle_system_status():
     data = request.get_json()
     if not data or 'active' not in data:
         return jsonify({'error': 'Missing active status'}), 400
 
     new_status = bool(data['active'])
 
-    config = SystemConfig.query.filter_by(key='system_active').first()
-    if not config:
-        config = SystemConfig(key='system_active', value_type='bool', is_public=True, is_editable=False)
-        db.session.add(config)
+    success, message = SystemGate.set_active(new_status, user_id=current_user.id, ip_address=request.remote_addr)
 
-    old_status = config.get_typed_value() if config.value is not None else True
-    config.value = str(new_status).lower()
-    config.updated_by = current_user.id
-
-    # Audit Log
-    log = AuditLog(
-        user_id=current_user.id,
-        action='update_system_status',
-        entity_type='system',
-        entity_id=0,
-        changes=f"Changed system status from {old_status} to {new_status}",
-        ip_address=request.remote_addr
-    )
-    db.session.add(log)
-    db.session.commit()
-
-    return jsonify({'success': True, 'active': new_status})
+    if success:
+        return jsonify({'success': True, 'active': new_status})
+    else:
+        return jsonify({'error': message}), 500

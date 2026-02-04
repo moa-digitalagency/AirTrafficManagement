@@ -12,6 +12,7 @@ Handles asynchronous invoice generation and processing
 """
 from datetime import datetime, timedelta
 from celery_app import celery
+from utils.system_gate import SystemGate
 
 
 @celery.task(bind=True, max_retries=3)
@@ -26,6 +27,9 @@ def generate_pending_invoices(self):
         from services.invoice_generator import generate_overflight_invoice, generate_landing_invoice
         
         with app.app_context():
+            if not SystemGate.is_active():
+                return {'status': 'skipped', 'reason': 'System Offline'}
+
             uninvoiced_overflights = Overflight.query.filter_by(
                 status='completed',
                 is_invoiced=False

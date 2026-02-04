@@ -13,6 +13,7 @@ Handles asynchronous flight position fetching and overflight detection
 import os
 from datetime import datetime
 from celery_app import celery
+from utils.system_gate import SystemGate
 
 
 @celery.task(bind=True, max_retries=3)
@@ -27,6 +28,9 @@ def fetch_flight_positions(self):
         from services.api_client import fetch_external_flight_data
         
         with app.app_context():
+            if not SystemGate.is_active():
+                return {'status': 'skipped', 'reason': 'System Offline'}
+
             flights_data = fetch_external_flight_data()
             
             # Optimization: Batch fetch flights to avoid N+1 queries
@@ -83,6 +87,9 @@ def check_airspace_entries(self):
         from services.flight_tracker import is_point_in_rdc, get_rdc_boundary
         
         with app.app_context():
+            if not SystemGate.is_active():
+                return {'status': 'skipped', 'reason': 'System Offline'}
+
             active_flights = Flight.query.filter(
                 Flight.flight_status.in_(['in_flight', 'approaching'])
             ).all()
@@ -159,6 +166,9 @@ def process_flight_data(flight_data: dict):
     from models import db, Flight
     
     with app.app_context():
+        if not SystemGate.is_active():
+            return {'status': 'skipped', 'reason': 'System Offline'}
+
         flight = Flight.query.filter_by(callsign=flight_data.get('callsign')).first()
         
         if flight:
@@ -184,6 +194,9 @@ def check_airport_movements(self):
         from services.flight_tracker import check_landing_events
 
         with app.app_context():
+            if not SystemGate.is_active():
+                return {'status': 'skipped', 'reason': 'System Offline'}
+
             # Check flights that are approaching or on ground
             # We also include in_flight just in case they are descending near an airport
             active_flights = Flight.query.filter(

@@ -250,6 +250,7 @@ def init_database():
         # System Configs
         logger.info("   - Configuration du système...")
         sys_configs_data = [
+            {'key': 'system_active', 'value': 'false', 'description': 'État global du système (Master Switch)', 'category': 'system', 'value_type': 'bool', 'is_editable': False},
             {'key': 'rva_contact_phone', 'value': '+2431234567890', 'description': 'Numéro de téléphone de contact sur les factures', 'category': 'invoice', 'value_type': 'string', 'is_editable': True},
             {'key': 'OVERFLIGHT_BILLING_MODE', 'value': 'DISTANCE', 'description': 'Mode de facturation survol: DISTANCE, TIME, HYBRID', 'category': 'invoice', 'value_type': 'string', 'is_editable': True},
             {'key': 'app_name', 'value': 'ATM-RDC', 'description': 'Nom de l\'application', 'category': 'branding', 'value_type': 'string', 'is_editable': True},

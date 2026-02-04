@@ -11,8 +11,14 @@ from sqlalchemy import func
 from datetime import datetime, date
 from models import db, Flight, Overflight, Landing, Alert, Invoice, TariffConfig
 from security.api_auth import require_api_key
+from utils.system_gate import SystemGate
 
 api_external_bp = Blueprint('api_external', __name__)
+
+@api_external_bp.before_request
+def check_system_active():
+    if not SystemGate.is_active():
+        return jsonify({'error': 'System Offline', 'message': 'System is currently offline for maintenance/security'}), 503
 
 @api_external_bp.route('/surveillance/flights', methods=['GET'])
 @require_api_key

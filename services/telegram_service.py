@@ -19,6 +19,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from models import db, TelegramSubscriber, SystemConfig
 from services.notification_service import NotificationService
 from services.translation_service import t
+from utils.system_gate import SystemGate
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -56,8 +57,7 @@ class TelegramService:
             return False
 
         # Check system status
-        config = SystemConfig.query.filter_by(key='system_active').first()
-        if config and config.get_typed_value() is False:
+        if not SystemGate.is_active():
             return False
 
         try:
@@ -184,6 +184,10 @@ def register_bot_handlers(app_context_provider):
     """
     if not bot:
         return
+
+    @bot.message_handler(func=lambda message: not SystemGate.is_active())
+    def handle_system_offline(message):
+         bot.reply_to(message, "⚠️ Le système ATM-RDC est actuellement éteint pour maintenance/sécurité.")
 
     @bot.message_handler(commands=['start'])
     def handle_start(message):
