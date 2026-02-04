@@ -208,9 +208,14 @@ function updateSystemUI(active) {
     const btn = document.getElementById('system-switch-btn');
     const badge = document.getElementById('system-status-badge');
 
-    // UI Config
-    const onClass = 'bg-green-500/20 text-green-400 border-green-500/30';
-    const offClass = 'bg-red-500/20 text-red-400 border-red-500/30';
+    // Button UI Config (Solid)
+    const btnOnClass = 'bg-green-600 text-white hover:bg-green-500 border-green-500 shadow-lg shadow-green-900/50';
+    const btnOffClass = 'bg-red-600 text-white hover:bg-red-500 border-red-500 shadow-lg shadow-red-900/50';
+
+    // Badge UI Config (Subtle)
+    const badgeOnClass = 'bg-green-500/20 text-green-400 border-green-500/30';
+    const badgeOffClass = 'bg-red-500/20 text-red-400 border-red-500/30';
+
     const onText = 'Système : ACTIF';
     const offText = 'Système : ARRÊT';
 
@@ -219,7 +224,7 @@ function updateSystemUI(active) {
         const text = btn.querySelector('#system-status-text');
         const icon = btn.querySelector('i');
 
-        btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border ${active ? onClass : offClass}`;
+        btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border ${active ? btnOnClass : btnOffClass}`;
         text.textContent = active ? onText : offText;
 
         if (active) {
@@ -233,7 +238,7 @@ function updateSystemUI(active) {
 
     if (badge) {
         const text = badge.querySelector('#system-status-text-badge');
-        badge.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all duration-300 border ${active ? onClass : offClass}`;
+        badge.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all duration-300 border ${active ? badgeOnClass : badgeOffClass}`;
         text.textContent = active ? onText : offText;
     }
 }
