@@ -25,6 +25,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 from models import db, Overflight, Landing, TariffConfig, Invoice, SystemConfig, AuditLog, User, Flight
 from services.translation_service import t
+from services.telegram_service import TelegramService
 
 
 def get_contact_phone():
@@ -491,5 +492,11 @@ def trigger_auto_invoice(flight_id):
     db.session.commit()
 
     generate_invoice_pdf(invoice)
+
+    # Notify Telegram: Billing
+    try:
+        TelegramService.notify_billing(invoice)
+    except Exception as e:
+        print(f"[InvoiceGenerator] Failed to send Telegram billing notification: {e}")
 
     return invoice

@@ -75,6 +75,11 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'facturation@rva.cd')
     
     # ============================================
+    # TELEGRAM BOT CONFIGURATION
+    # ============================================
+    TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+
+    # ============================================
     # FILE UPLOADS
     # ============================================
     UPLOAD_FOLDER = 'statics/uploads'

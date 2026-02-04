@@ -17,3 +17,4 @@ from .billing import Invoice, InvoiceLineItem, TariffConfig
 from .system import AuditLog, Alert, Notification, SystemConfig
 from .airspace import Airspace
 from .api_key import ApiKey
+from .telegram import TelegramSubscriber

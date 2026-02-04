@@ -28,7 +28,7 @@ from sqlalchemy import text, inspect
 from models import (db, User, Aircraft, Airport, Airline, TariffConfig, Flight, 
                     Overflight, Landing, Alert, FlightPosition, FlightRoute, 
                     Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog,
-                    Airspace, ApiKey, Role, Permission)
+                    Airspace, ApiKey, Role, Permission, TelegramSubscriber)
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -53,7 +53,7 @@ def check_and_update_schema(app):
         target_models = [User, Aircraft, Airport, Airline, TariffConfig, Flight,
                     Overflight, Landing, Alert, FlightPosition, FlightRoute,
                     Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog,
-                    Airspace, ApiKey, Role, Permission]
+                    Airspace, ApiKey, Role, Permission, TelegramSubscriber]
 
         for model in target_models:
             table_name = model.__tablename__
