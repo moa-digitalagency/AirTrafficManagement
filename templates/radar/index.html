@@ -247,9 +247,13 @@
             refresh: "{{ t('radar.refresh') }}",
             all_operators: "{{ t('radar.all_operators') }}",
             fullscreen: "{{ t('radar.fullscreen') }}",
-            exit_fullscreen: "{{ t('radar.exit_fullscreen') }}"
+            exit_fullscreen: "{{ t('radar.exit_fullscreen') }}",
+            cat: "{{ t('radar.cat') }}",
+            squawk: "{{ t('radar.squawk') }}",
+            alt_abbr: "{{ t('radar.alt_abbr') }}"
         },
-        airports: {{ airports | tojson | safe }}
+        airports: {{ airports | tojson | safe }},
+        unitSettings: {{ unit_settings | tojson | safe }}
     };
 </script>
 <script src="{{ url_for('static', filename='js/radar/index.js') }}"></script>

@@ -25,7 +25,17 @@ radar_bp = Blueprint('radar', __name__)
 def index():
     airports = Airport.query.filter_by(is_domestic=True).all()
     airports_data = [a.to_dict() for a in airports]
-    return render_template('radar/index.html', airports=airports_data)
+
+    from models import SystemConfig
+    unit_alt = SystemConfig.query.filter_by(key='unit_altitude').first()
+    unit_spd = SystemConfig.query.filter_by(key='unit_speed').first()
+
+    unit_settings = {
+        'altitude': unit_alt.value if unit_alt else 'ft',
+        'speed': unit_spd.value if unit_spd else 'kts'
+    }
+
+    return render_template('radar/index.html', airports=airports_data, unit_settings=unit_settings)
 
 
 @radar_bp.route('/overflights')

@@ -42,8 +42,12 @@ def create_app(config_name='default'):
                 static_folder='static')
     
     # Load config from the config dictionary using environment variable or default
-    env_config = os.environ.get('FLASK_CONFIG', config_name)
-    app.config.from_object(config[env_config])
+    # Handle direct config object injection for testing
+    if isinstance(config_name, type) or not isinstance(config_name, str):
+        app.config.from_object(config_name)
+    else:
+        env_config = os.environ.get('FLASK_CONFIG', config_name)
+        app.config.from_object(config[env_config])
     
     db.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", async_mode='eventlet')

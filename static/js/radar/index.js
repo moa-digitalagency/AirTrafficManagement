@@ -6,6 +6,31 @@
  */
 
     const i18n = window.radarIndexContext.i18n;
+    const unitSettings = window.radarIndexContext.unitSettings || { altitude: 'ft', speed: 'kts' };
+
+    function formatAltitude(ft, short = false) {
+        ft = ft || 0;
+        if (unitSettings.altitude === 'm') {
+            const m = Math.round(ft * 0.3048);
+            if (short) return `${Math.round(m / 100) / 10}km`; // e.g. 10.5km
+            return `${m.toLocaleString()} m`;
+        }
+        // Imperial (ft)
+        if (short) return `FL${Math.round(ft / 100)}`;
+        return `${Math.round(ft).toLocaleString()} ft`;
+    }
+
+    function formatSpeed(kts) {
+        kts = kts || 0;
+        if (unitSettings.speed === 'km/h') {
+            return `${Math.round(kts * 1.852)} km/h`;
+        }
+        if (unitSettings.speed === 'mach') {
+            // Approx mach at standard altitude, very rough
+            return `M${(kts / 661.47).toFixed(2)}`;
+        }
+        return `${Math.round(kts)} kts`;
+    }
 
     // Aircraft SVGs
     const aircraftIcons = {
@@ -172,7 +197,7 @@
             if (data.metar && data.metar.raw) {
                 content += `<div class="mt-2 text-xs font-mono bg-dark-300 p-2 rounded">${data.metar.raw}</div>`;
                 content += `<div class="mt-2 text-sm">
-                    <span class="text-gray-400">Cat:</span> <span class="${data.metar.flight_category === 'VFR' ? 'text-green-400' : 'text-yellow-400'}">${data.metar.flight_category || 'N/A'}</span>
+                    <span class="text-gray-400">${i18n.cat}:</span> <span class="${data.metar.flight_category === 'VFR' ? 'text-green-400' : 'text-yellow-400'}">${data.metar.flight_category || 'N/A'}</span>
                 </div>`;
             }
 
@@ -342,8 +367,8 @@
                         ${operatorText}
                     </div>
                     <div class="smart-label-stats">
-                        <span><i class="fas fa-tachometer-alt mr-0.5 text-green-400"></i>${Math.round(flight.ground_speed || 0)}</span>
-                        <span><i class="fas fa-arrows-alt-v mr-0.5 text-yellow-400"></i>FL${Math.round((flight.altitude || 0) / 100)}</span>
+                        <span><i class="fas fa-tachometer-alt mr-0.5 text-green-400"></i>${formatSpeed(flight.ground_speed).replace(/ .*/, '')}</span>
+                        <span><i class="fas fa-arrows-alt-v mr-0.5 text-yellow-400"></i>${formatAltitude(flight.altitude, true)}</span>
                     </div>
                 </div>
             `;
@@ -368,10 +393,10 @@
                         <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.dep}</span> ${window.escapeHtml(flight.departure || '???')}</div>
                         <div class="bg-dark-300 p-1.5 rounded"><span class="text-gray-400 block text-xs">${i18n.arr}</span> ${window.escapeHtml(flight.arrival || '???')}</div>
 
-                        <div><span class="text-gray-400 text-xs block">Alt</span> ${Math.round(flight.altitude || 0).toLocaleString()} ft</div>
-                        <div><span class="text-gray-400 text-xs block">${i18n.speed}</span> ${Math.round(flight.ground_speed || 0)} kts</div>
+                        <div><span class="text-gray-400 text-xs block">${i18n.alt_abbr}</span> ${formatAltitude(flight.altitude, false)}</div>
+                        <div><span class="text-gray-400 text-xs block">${i18n.speed}</span> ${formatSpeed(flight.ground_speed)}</div>
                         <div><span class="text-gray-400 text-xs block">${i18n.heading}</span> ${Math.round(flight.heading || 0)}°</div>
-                        <div><span class="text-gray-400 text-xs block">Squawk</span> ${flight.squawk || '-'}</div>
+                        <div><span class="text-gray-400 text-xs block">${i18n.squawk}</span> ${flight.squawk || '-'}</div>
                     </div>
 
                     ${flight.aircraft ? `
@@ -470,7 +495,7 @@
                         <span>${arrival}</span>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
-                        FL${Math.round((flight.altitude || 0) / 100)} | ${Math.round(flight.ground_speed || 0)} kts | ${Math.round(flight.heading || 0)}°
+                        ${formatAltitude(flight.altitude, true)} | ${formatSpeed(flight.ground_speed)} | ${Math.round(flight.heading || 0)}°
                     </div>
                     ${operator ? `<div class="text-xs text-gray-600 mt-1">${operator}</div>` : ''}
                 </div>

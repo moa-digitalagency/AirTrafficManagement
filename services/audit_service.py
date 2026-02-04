@@ -8,6 +8,7 @@
 """
 from flask import request
 from models import db, AuditLog
+from services.translation_service import t
 import json
 
 def log_audit_event(action, user_id=None, entity_type=None, entity_id=None,
@@ -68,8 +69,8 @@ def log_audit_event(action, user_id=None, entity_type=None, entity_id=None,
             from services.notification_service import NotificationService
             NotificationService.notify_admins(
                 type='security_alert',
-                title=f"Alerte Sécurité: {action}",
-                message=f"Action critique détectée: {action}. Gravité: {severity}. ID Entité: {entity_id}",
+                title=t('notifications.security_alert_title', 'fr').format(action=action),
+                message=t('notifications.security_alert_msg', 'fr').format(action=action, severity=severity, entity_id=entity_id),
                 icon='fas fa-shield-alt'
             )
 

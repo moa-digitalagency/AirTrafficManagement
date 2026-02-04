@@ -118,7 +118,10 @@
         "ground_speed": "Vitesse Sol",
         "scan_effect": "Effet Radar",
         "toggle_scan": "Scan",
-        "immersive_mode": "Immersion"
+        "immersive_mode": "Immersion",
+        "cat": "Cat",
+        "squawk": "Squawk",
+        "alt_abbr": "Alt"
     },
 
     "flights": {
@@ -318,6 +321,8 @@
         "updated_key": "Mis à jour : {key}",
         "new_request_title": "Nouvelle demande Telegram",
         "new_request_msg": "Utilisateur {username} ({first_name}) demande l'accès au Bot.",
+        "security_alert_title": "Alerte Sécurité : {action}",
+        "security_alert_msg": "Action critique détectée : {action}. Gravité : {severity}. ID Entité : {entity_id}",
         "overflight_completed_title": "Survol terminé: {callsign}",
         "overflight_completed_msg": "Le vol {callsign} a quitté l'espace aérien. Prêt à facturer.",
         "landing_title": "Atterrissage: {callsign}",
