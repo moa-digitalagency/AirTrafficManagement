@@ -436,6 +436,11 @@ def trigger_auto_invoice(flight_id):
     Automatically create an invoice for a flight if not already billed.
     Aggregates Landing and Overflight for the same flight.
     """
+    # Check system status
+    config = SystemConfig.query.filter_by(key='system_active').first()
+    if config and config.get_typed_value() is False:
+        return None
+
     flight = Flight.query.get(flight_id)
     if not flight:
         return None

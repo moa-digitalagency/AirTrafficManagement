@@ -20,7 +20,7 @@ from functools import lru_cache
 from shapely.geometry import Point, shape
 from shapely.prepared import prep
 from geoalchemy2.shape import to_shape
-from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig, Airspace
+from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, Landing, TariffConfig, Airspace, SystemConfig
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
 from services.invoice_generator import trigger_auto_invoice
 from services.telegram_service import TelegramService
@@ -124,6 +124,8 @@ def is_point_in_rdc(lat, lon):
 def get_active_flights(use_external_api=True):
     """
     Get active flights from external API (AviationStack/ADSBexchange) or database.
+
+    Check system status first.
     
     Strategy:
     1. Try external API first (if configured)
@@ -135,6 +137,11 @@ def get_active_flights(use_external_api=True):
     Returns:
         List of flight dictionaries with position data
     """
+    # Check system status
+    config = SystemConfig.query.filter_by(key='system_active').first()
+    if config and config.get_typed_value() is False:
+        return []
+
     result = []
     
     # Try external API first (AviationStack → ADSBexchange fallback)

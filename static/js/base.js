@@ -189,3 +189,129 @@ if (window.baseContext && window.baseContext.isAuthenticated) {
     setInterval(updateNotifications, 30000);
     updateNotifications();
 }
+
+// System Status Logic
+let systemActive = true; // Default
+
+async function initSystemStatus() {
+    try {
+        const res = await fetch('/api/system/status');
+        const data = await res.json();
+        systemActive = data.active;
+        updateSystemUI(systemActive);
+    } catch(e) {
+        console.error('Failed to fetch system status', e);
+    }
+}
+
+function updateSystemUI(active) {
+    const btn = document.getElementById('system-switch-btn');
+    const badge = document.getElementById('system-status-badge');
+
+    // Explicit Colors:
+    // ACTIVE = GREEN (bg-green-600)
+    // OFF = RED (bg-red-600)
+    const btnOnClass = 'bg-green-600 text-white hover:bg-green-500 border-green-500 shadow-lg shadow-green-900/50';
+    const btnOffClass = 'bg-red-600 text-white hover:bg-red-500 border-red-500 shadow-lg shadow-red-900/50';
+
+    // Badge UI (User View)
+    const badgeOnClass = 'bg-green-500/20 text-green-400 border-green-500/30';
+    const badgeOffClass = 'bg-red-500/20 text-red-400 border-red-500/30';
+
+    const onText = 'Système : ACTIF';
+    const offText = 'Système : ARRÊT';
+
+    if (btn) {
+        btn.disabled = false;
+        const text = btn.querySelector('#system-status-text');
+        const icon = btn.querySelector('i');
+
+        // Remove transition to avoid "Yellow" intermediate state during color flip
+        btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${active ? btnOnClass : btnOffClass}`;
+        text.textContent = active ? onText : offText;
+
+        if (active) {
+             btn.classList.add('animate-pulse');
+             icon.className = 'fas fa-power-off'; // Or fa-bolt? User said 'Power On'. fa-power-off is standard.
+        } else {
+             btn.classList.remove('animate-pulse');
+             icon.className = 'fas fa-power-off';
+        }
+    }
+
+    if (badge) {
+        const text = badge.querySelector('#system-status-text-badge');
+        badge.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all duration-300 border ${active ? badgeOnClass : badgeOffClass}`;
+        text.textContent = active ? onText : offText;
+    }
+}
+
+function toggleSystemStatus() {
+    const modal = document.getElementById('system-confirm-modal');
+    const title = document.getElementById('modal-title');
+    const msg = document.getElementById('modal-message');
+    const confirmBtn = document.getElementById('confirm-system-btn');
+    const iconContainer = document.getElementById('modal-icon-container');
+    const icon = iconContainer.querySelector('i');
+
+    if (systemActive) {
+        // Current: Active. Action: Turn OFF.
+        title.textContent = "Arrêter le système ?";
+        msg.textContent = "Voulez-vous arrêter tout le système ? La surveillance, la facturation et le Bot seront suspendus.";
+        confirmBtn.className = "inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto";
+        iconContainer.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10";
+        icon.className = "fas fa-power-off text-red-600";
+    } else {
+        // Current: Off. Action: Turn ON.
+        title.textContent = "Démarrer le système ?";
+        msg.textContent = "Démarrer les services ATM-RDC ?";
+        confirmBtn.className = "inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto";
+        iconContainer.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10";
+        icon.className = "fas fa-bolt text-green-600";
+    }
+
+    // Bind click
+    confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Traitement...";
+
+        try {
+            const res = await fetch('/api/system/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': window.baseContext.csrfToken
+                },
+                body: JSON.stringify({ active: !systemActive })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                systemActive = data.active;
+                updateSystemUI(systemActive);
+                closeSystemModal();
+            } else {
+                alert('Erreur: ' + (data.error || 'Unknown error'));
+            }
+        } catch(e) {
+            alert('Erreur de connexion');
+        } finally {
+            confirmBtn.disabled = false;
+        }
+    };
+
+    modal.classList.remove('hidden');
+}
+
+function closeSystemModal() {
+    document.getElementById('system-confirm-modal').classList.add('hidden');
+}
+
+// Init
+if (window.baseContext && window.baseContext.isAuthenticated) {
+    initSystemStatus();
+}
+
+// Make global
+window.toggleSystemStatus = toggleSystemStatus;
+window.closeSystemModal = closeSystemModal;

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 import json
 
-from models import db, Flight, Aircraft, Airport, Airline, Overflight, Landing, Invoice, Alert, TelegramSubscriber
+from models import db, Flight, Aircraft, Airport, Airline, Overflight, Landing, Invoice, Alert, TelegramSubscriber, SystemConfig, AuditLog
 from services.telegram_service import TelegramService
 from utils.decorators import role_required
 
@@ -261,3 +261,46 @@ def approve_telegram_subscriber():
     TelegramService.send_message(sub.telegram_chat_id, "✅ Votre accès est validé.\nTapez /settings pour configurer vos notifications.")
 
     return jsonify({'success': True, 'message': 'Subscriber approved'})
+
+
+@api_bp.route('/system/status', methods=['GET'])
+@login_required
+def get_system_status():
+    config = SystemConfig.query.filter_by(key='system_active').first()
+    # Default to True if not set
+    is_active = config.get_typed_value() if config else True
+    return jsonify({'active': is_active})
+
+
+@api_bp.route('/system/status', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def update_system_status():
+    data = request.get_json()
+    if not data or 'active' not in data:
+        return jsonify({'error': 'Missing active status'}), 400
+
+    new_status = bool(data['active'])
+
+    config = SystemConfig.query.filter_by(key='system_active').first()
+    if not config:
+        config = SystemConfig(key='system_active', value_type='bool', is_public=True, is_editable=False)
+        db.session.add(config)
+
+    old_status = config.get_typed_value() if config.value is not None else True
+    config.value = str(new_status).lower()
+    config.updated_by = current_user.id
+
+    # Audit Log
+    log = AuditLog(
+        user_id=current_user.id,
+        action='update_system_status',
+        entity_type='system',
+        entity_id=0,
+        changes=f"Changed system status from {old_status} to {new_status}",
+        ip_address=request.remote_addr
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return jsonify({'success': True, 'active': new_status})

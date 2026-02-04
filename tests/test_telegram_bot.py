@@ -9,7 +9,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from flask import Flask
-from models import db, TelegramSubscriber, User
+from models import db, TelegramSubscriber, User, SystemConfig
 from services.telegram_service import TelegramService
 
 def create_test_app():
@@ -29,6 +29,12 @@ class TestTelegramBot(unittest.TestCase):
         # Create tables
         TelegramSubscriber.__table__.create(db.engine)
         User.__table__.create(db.engine)
+        SystemConfig.__table__.create(db.engine)
+
+        # Seed System Config as active
+        config = SystemConfig(key='system_active', value='true', value_type='boolean')
+        db.session.add(config)
+        db.session.commit()
 
     def tearDown(self):
         db.session.remove()
