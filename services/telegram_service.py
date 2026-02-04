@@ -9,6 +9,7 @@
 import os
 import logging
 import json
+import random
 from datetime import datetime
 from threading import Thread
 
@@ -184,27 +185,52 @@ def register_bot_handlers(app_context_provider):
 
             if not subscriber:
                 # Create PENDING request
+                otp_code = f"{random.randint(0, 999999):06d}"
                 subscriber = TelegramSubscriber(
                     telegram_chat_id=chat_id,
                     username=username,
                     first_name=first_name,
-                    status='PENDING'
+                    status='PENDING',
+                    verification_code=otp_code,
+                    code_generated_at=datetime.utcnow()
                 )
                 db.session.add(subscriber)
                 db.session.commit()
 
-                bot.reply_to(message, "🔒 Demande d'accès envoyée à l'administrateur. Veuillez patienter.")
+                # Respond with OTP
+                msg = (
+                    "🔒 **Sécurité Renforcée**\n"
+                    "Votre demande est en attente. Pour finaliser l'activation, communiquez le code suivant à votre administrateur (par téléphone ou email) :\n\n"
+                    f"**{otp_code[:3]} {otp_code[3:]}**\n\n"
+                    "*Ce code est unique à votre demande.*"
+                )
+                bot.reply_to(message, msg, parse_mode='Markdown')
 
                 # Notify Internal Admins
                 NotificationService.notify_admins(
                     type='security',
                     title="Nouvelle demande Telegram",
                     message=f"Utilisateur {username} ({first_name}) demande l'accès au Bot.",
-                    link="/admin/users" # Assuming an admin page exists or will exist
+                    link="/admin/telegram"
                 )
 
             elif subscriber.status == 'PENDING':
-                bot.reply_to(message, "⏳ Votre demande est toujours en attente de validation.")
+                # If code exists, resend it, otherwise generate new one
+                if not subscriber.verification_code:
+                    otp_code = f"{random.randint(0, 999999):06d}"
+                    subscriber.verification_code = otp_code
+                    subscriber.code_generated_at = datetime.utcnow()
+                    db.session.commit()
+                else:
+                    otp_code = subscriber.verification_code
+
+                msg = (
+                    "🔒 **Sécurité Renforcée**\n"
+                    "Votre demande est en attente. Pour finaliser l'activation, communiquez le code suivant à votre administrateur (par téléphone ou email) :\n\n"
+                    f"**{otp_code[:3]} {otp_code[3:]}**\n\n"
+                    "*Ce code est unique à votre demande.*"
+                )
+                bot.reply_to(message, msg, parse_mode='Markdown')
 
             elif subscriber.status == 'APPROVED':
                 bot.reply_to(message, f"✅ Bienvenue, {first_name}!\n\nUtilisez /settings pour configurer vos notifications.")

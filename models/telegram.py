@@ -26,6 +26,9 @@ class TelegramSubscriber(db.Model):
     request_date = db.Column(db.DateTime, default=datetime.utcnow)
     approval_date = db.Column(db.DateTime)
 
+    verification_code = db.Column(db.String(6))
+    code_generated_at = db.Column(db.DateTime)
+
     approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     approved_by = db.relationship('User', backref='approved_telegram_subscribers')
 
