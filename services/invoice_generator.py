@@ -287,18 +287,18 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     content.append(Spacer(1, 0.5*cm))
     
     if invoice.airline:
-        content.append(Paragraph("<b>Client:</b>", styles['Normal']))
+        content.append(Paragraph(f"<b>{t('invoices_pdf.client')}</b>", styles['Normal']))
         content.append(Paragraph(f"{invoice.airline.name}", styles['Normal']))
         if invoice.airline.address:
             content.append(Paragraph(f"{invoice.airline.address}", styles['Normal']))
         if invoice.airline.email:
-            content.append(Paragraph(f"Email: {invoice.airline.email}", styles['Normal']))
+            content.append(Paragraph(f"{t('invoices_pdf.email')} {invoice.airline.email}", styles['Normal']))
         content.append(Spacer(1, 0.5*cm))
     
-    content.append(Paragraph("<b>Détails des services</b>", styles['Heading2']))
+    content.append(Paragraph(f"<b>{t('invoices_pdf.details_header')}</b>", styles['Heading2']))
     content.append(Spacer(1, 0.3*cm))
     
-    items_data = [['Description', 'Quantité', 'Prix Unitaire', 'Total']]
+    items_data = [[t('invoices_pdf.col_desc'), t('invoices_pdf.col_qty'), t('invoices_pdf.col_unit'), t('invoices_pdf.col_total')]]
     
     landing_base = get_tariff('LANDING_BASE')
     
@@ -307,7 +307,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         cost, desc, unit_desc = calculate_overflight_cost(ovf)
 
         items_data.append([
-            f'Survol {ovf.session_id}',
+            t('invoices_pdf.item_overflight').format(session_id=ovf.session_id),
             desc,
             unit_desc,
             f'{cost:.2f} USD'
@@ -316,7 +316,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     landings = Landing.query.filter_by(invoice_id=invoice.id).all()
     for land in landings:
         items_data.append([
-            f'Atterrissage {land.airport_icao}',
+            t('invoices_pdf.item_landing').format(airport=land.airport_icao),
             '1',
             f'{landing_base:.2f} USD',
             f'{landing_base:.2f} USD'
@@ -338,9 +338,9 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     content.append(Spacer(1, 0.5*cm))
     
     totals_data = [
-        ['', '', 'Sous-total:', f'{invoice.subtotal:.2f} USD'],
-        ['', '', 'TVA (16%):', f'{invoice.tax_amount:.2f} USD'],
-        ['', '', 'TOTAL:', f'{invoice.total_amount:.2f} USD'],
+        ['', '', t('invoices_pdf.subtotal'), f'{invoice.subtotal:.2f} USD'],
+        ['', '', t('invoices_pdf.tax'), f'{invoice.tax_amount:.2f} USD'],
+        ['', '', t('invoices_pdf.total'), f'{invoice.total_amount:.2f} USD'],
     ]
     
     totals_table = Table(totals_data, colWidths=[8*cm, 3*cm, 3*cm, 3*cm])
@@ -367,7 +367,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
         content.append(Spacer(1, 0.2*cm))
 
     if footer_banks:
-         content.append(Paragraph("<b>Coordonnées Bancaires:</b>", footer_style))
+         content.append(Paragraph(f"<b>{t('invoices_pdf.bank_details')}</b>", footer_style))
          content.append(Paragraph(footer_banks.replace('\n', '<br/>'), footer_style))
          content.append(Spacer(1, 0.2*cm))
 
@@ -382,7 +382,7 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
     gen_time = datetime.now().strftime("%d/%m/%Y %H:%M")
     gen_user = generated_by_user.username if generated_by_user else (f"User #{invoice.created_by}" if invoice.created_by else "Système")
     content.append(Spacer(1, 0.2*cm))
-    content.append(Paragraph(f"Généré le {gen_time} par {gen_user}", footer_style))
+    content.append(Paragraph(t('invoices_pdf.generated_footer').format(date=gen_time, user=gen_user), footer_style))
 
     doc.build(content)
     
