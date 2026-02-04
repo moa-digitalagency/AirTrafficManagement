@@ -18,10 +18,11 @@ from shapely import wkt
 from shapely.geometry import shape
 from geoalchemy2.shape import to_shape
 
-from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig, SystemConfig, Airspace
+from models import db, User, Aircraft, Airport, Airline, AuditLog, TariffConfig, SystemConfig, Airspace, TelegramSubscriber
 from models.user import Role, Permission
 from utils.decorators import role_required
 from services.translation_service import t
+from services.telegram_service import TelegramService
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -778,3 +779,104 @@ def save_airspace():
         db.session.rollback()
         current_app.logger.error(f"Error saving airspace: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@admin_bp.route('/telegram')
+@login_required
+@role_required(['superadmin'])
+def telegram_bot():
+    pending_subscribers = TelegramSubscriber.query.filter_by(status='PENDING').order_by(TelegramSubscriber.request_date.desc()).all()
+    active_subscribers = TelegramSubscriber.query.filter_by(status='APPROVED').order_by(TelegramSubscriber.approval_date.desc()).all()
+
+    # Mask token
+    token = current_app.config.get('TELEGRAM_BOT_TOKEN', '')
+    masked_token = f"{token[:4]}...{token[-4:]}" if token and len(token) > 8 else "Non configuré"
+
+    return render_template('admin/telegram_bot.html',
+                           pending_subscribers=pending_subscribers,
+                           active_subscribers=active_subscribers,
+                           masked_token=masked_token)
+
+
+@admin_bp.route('/telegram/<int:id>/approve', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def telegram_approve(id):
+    sub = TelegramSubscriber.query.get_or_404(id)
+    if sub.status != 'PENDING':
+        flash('Cette demande n\'est plus en attente.', 'error')
+        return redirect(url_for('admin.telegram_bot'))
+
+    sub.status = 'APPROVED'
+    sub.approval_date = datetime.utcnow()
+    sub.approved_by_id = current_user.id
+    db.session.commit()
+
+    # Notify user
+    TelegramService.send_message(sub.telegram_chat_id, "✅ Votre accès est validé.\nTapez /settings pour configurer vos notifications.")
+
+    flash(f'Accès approuvé pour {sub.username or sub.first_name}', 'success')
+    return redirect(url_for('admin.telegram_bot'))
+
+
+@admin_bp.route('/telegram/<int:id>/reject', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def telegram_reject(id):
+    sub = TelegramSubscriber.query.get_or_404(id)
+    sub.status = 'REJECTED'
+    db.session.commit()
+    flash(f'Accès refusé pour {sub.username or sub.first_name}', 'success')
+    return redirect(url_for('admin.telegram_bot'))
+
+
+@admin_bp.route('/telegram/<int:id>/revoke', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def telegram_revoke(id):
+    sub = TelegramSubscriber.query.get_or_404(id)
+    sub.status = 'REVOKED'
+    db.session.commit()
+
+    # Try to notify
+    TelegramService.send_message(sub.telegram_chat_id, "⛔ Votre accès a été révoqué par l'administrateur.")
+
+    flash(f'Accès révoqué pour {sub.username or sub.first_name}', 'success')
+    return redirect(url_for('admin.telegram_bot'))
+
+
+@admin_bp.route('/telegram/<int:id>/configure', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def telegram_configure(id):
+    sub = TelegramSubscriber.query.get_or_404(id)
+
+    # Update preferences based on form
+    # Explicitly check for checkbox presence
+    new_prefs = {
+        "notify_entry": request.form.get('notify_entry') == 'on',
+        "notify_exit": request.form.get('notify_exit') == 'on',
+        "notify_alerts": request.form.get('notify_alerts') == 'on',
+        "notify_daily_report": request.form.get('notify_daily_report') == 'on',
+        "notify_billing": request.form.get('notify_billing') == 'on'
+    }
+
+    # Need to reassign to trigger SQLAlchemy JSON detection (sometimes required)
+    sub.preferences = dict(new_prefs)
+    db.session.commit()
+
+    flash(f'Préférences mises à jour pour {sub.username or sub.first_name}', 'success')
+    return redirect(url_for('admin.telegram_bot'))
+
+
+@admin_bp.route('/telegram/test', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def telegram_test():
+    success, message = TelegramService.test_connection()
+    if success:
+         flash(f'Connexion au Bot Telegram active ✅ ({message})', 'success')
+    else:
+         flash(f'Echec connexion Bot Telegram ❌ : {message}', 'error')
+
+    return redirect(url_for('admin.telegram_bot'))

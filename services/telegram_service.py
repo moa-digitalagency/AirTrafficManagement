@@ -31,6 +31,16 @@ class TelegramService:
         return bot is not None
 
     @staticmethod
+    def test_connection():
+        if not bot:
+            return False, "Bot not initialized"
+        try:
+            info = bot.get_me()
+            return True, f"Connected as @{info.username}"
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
     def get_admin_subscribers():
         """Get all approved subscribers who are also admins (if we linked them users)"""
         # For now, we notify all approved subscribers or specific roles.
