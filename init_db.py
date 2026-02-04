@@ -28,7 +28,7 @@ from sqlalchemy import text, inspect
 from models import (db, User, Aircraft, Airport, Airline, TariffConfig, Flight, 
                     Overflight, Landing, Alert, FlightPosition, FlightRoute, 
                     Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog,
-                    Airspace)
+                    Airspace, ApiKey, Role, Permission)
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -42,15 +42,43 @@ def create_app():
     db.init_app(app)
     return app
 
-def get_or_create(session, model, **kwargs):
-    """Récupère une instance existante ou en crée une nouvelle si elle n'existe pas."""
-    instance = session.query(model).filter_by(**kwargs).first()
-    if instance:
-        return instance, False
-    else:
-        instance = model(**kwargs)
-        session.add(instance)
-        return instance, True
+def check_and_update_schema(app):
+    """
+    Vérifie et met à jour le schéma de la base de données (ajout de colonnes manquantes).
+    """
+    with app.app_context():
+        logger.info("2b. Vérification des colonnes manquantes (Migration)...")
+        inspector = inspect(db.engine)
+
+        target_models = [User, Aircraft, Airport, Airline, TariffConfig, Flight,
+                    Overflight, Landing, Alert, FlightPosition, FlightRoute,
+                    Invoice, InvoiceLineItem, Notification, SystemConfig, AuditLog,
+                    Airspace, ApiKey, Role, Permission]
+
+        for model in target_models:
+            table_name = model.__tablename__
+            if not inspector.has_table(table_name):
+                # La table n'existe pas encore, create_all s'en chargera ou s'en est chargé
+                continue
+
+            existing_columns = {col['name'] for col in inspector.get_columns(table_name)}
+
+            for column in model.__table__.columns:
+                if column.name not in existing_columns:
+                    logger.info(f"   - Colonne manquante détectée: {table_name}.{column.name}")
+                    try:
+                        # Compile le type de colonne pour le dialecte actuel (PostgreSQL)
+                        col_type = column.type.compile(db.engine.dialect)
+
+                        # On ajoute la colonne en autorisant NULL pour éviter les conflits avec les données existantes
+                        # sauf si une valeur par défaut serveur est fournie (ce qui est rare ici)
+                        alter_stmt = f"ALTER TABLE {table_name} ADD COLUMN {column.name} {col_type}"
+                        db.session.execute(text(alter_stmt))
+                        logger.info(f"     -> Colonne {column.name} ajoutée avec succès.")
+                    except Exception as e:
+                        logger.error(f"     -> Erreur critique lors de l'ajout de la colonne {column.name}: {e}")
+
+            db.session.commit()
 
 def init_database():
     app = create_app()
@@ -73,6 +101,9 @@ def init_database():
         # db.create_all() checks for existence and creates only missing tables
         db.create_all()
         logger.info("   - Tables vérifiées.")
+
+        # 2b. Schema Migration (Columns)
+        check_and_update_schema(app)
 
         # 3. Data Seeding (Idempotent)
         logger.info("3. Insertion des données initiales (si manquantes)...")
