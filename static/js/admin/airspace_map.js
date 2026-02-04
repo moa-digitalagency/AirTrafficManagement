@@ -4,6 +4,7 @@
 
     // Existing GeoJSON passed from backend
     const existingGeoJSON = window.adminAirspaceContext.existingGeoJSON;
+    const i18n = window.adminAirspaceContext.i18n || {};
 
     function initMap() {
         // Initialize map centered on RDC
@@ -33,7 +34,7 @@
                     showArea: true,
                     drawError: {
                         color: '#e1e100', // Color the shape will turn when intersects
-                        message: '<strong>Erreur:</strong> Les limites ne peuvent pas se croiser!' // Message that will show when intersect
+                        message: i18n.airspace_map ? i18n.airspace_map.draw_error : 'Error: Intersection' // Message that will show when intersect
                     },
                     shapeOptions: {
                         color: '#3b82f6'
@@ -89,7 +90,7 @@
         // The backend expects 'geojson' which contains 'geometry' or 'features'.
 
         if (data.features.length === 0) {
-            alert("Veuillez dessiner une zone avant de sauvegarder.");
+            alert(i18n.airspace_map ? i18n.airspace_map.draw_empty : "Please draw zone.");
             return;
         }
 
@@ -98,7 +99,8 @@
         // Ideally we should union them but that's complex client side.
         // Warn if multiple
         if (data.features.length > 1) {
-            if (!confirm("Attention: Plusieurs zones détectées. Seule la première ou une fusion sera sauvegardée. Continuer?")) {
+            const msg = i18n.airspace_map ? i18n.airspace_map.multiple_zones : "Multiple zones.";
+            if (!confirm(msg)) {
                 return;
             }
         }
@@ -119,13 +121,15 @@
 
             if (result.success) {
                 // Show success notification (using simple alert for now, or toast if available)
-                alert("Configuration sauvegardée avec succès!");
+                alert(i18n.airspace_map ? i18n.airspace_map.save_success : "Saved!");
             } else {
-                alert("Erreur lors de la sauvegarde: " + result.message);
+                const prefix = i18n.airspace_map ? i18n.airspace_map.save_error : "Error: ";
+                alert(prefix + result.message);
             }
         } catch (error) {
             console.error("Error:", error);
-            alert("Erreur de communication avec le serveur.");
+            const err = i18n.common && i18n.common.error ? i18n.common.error.connection : "Connection Error";
+            alert(err);
         }
     }
 

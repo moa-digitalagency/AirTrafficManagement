@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Gestion des Clés API{% endblock %}
-{% block page_title %}Gestion des Clés API Externe{% endblock %}
-{% block page_subtitle %}Gérez les accès aux systèmes tiers{% endblock %}
+{% block title %}{{ t('admin.api_keys.title') }}{% endblock %}
+{% block page_title %}{{ t('admin.api_keys.page_title') }}{% endblock %}
+{% block page_subtitle %}{{ t('admin.api_keys.subtitle') }}{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
     <div class="flex justify-between items-center">
-        <h3 class="text-lg font-medium text-white">Clés API Actives</h3>
+        <h3 class="text-lg font-medium text-white">{{ t('admin.api_keys.active_keys') }}</h3>
         <button onclick="openModal()" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors flex items-center gap-2">
             <i class="fas fa-plus text-sm"></i>
-            <span>Générer une clé</span>
+            <span>{{ t('admin.api_keys.generate_key') }}</span>
         </button>
     </div>
 
@@ -19,14 +19,14 @@
             <table class="w-full text-left text-sm text-gray-400">
                 <thead class="bg-dark-300 text-gray-200 uppercase text-xs">
                     <tr>
-                        <th class="px-6 py-4 font-semibold">Nom</th>
-                        <th class="px-6 py-4 font-semibold">Clé (Masquée)</th>
+                        <th class="px-6 py-4 font-semibold">{{ t('admin.api_keys.name') }}</th>
+                        <th class="px-6 py-4 font-semibold">{{ t('admin.api_keys.key_masked') }}</th>
                         <th class="px-6 py-4 font-semibold">Status</th>
-                        <th class="px-6 py-4 font-semibold">Rôle</th>
-                        <th class="px-6 py-4 font-semibold">Rate Limit</th>
-                        <th class="px-6 py-4 font-semibold">Dernier usage</th>
-                        <th class="px-6 py-4 font-semibold">Créé le</th>
-                        <th class="px-6 py-4 font-semibold text-right">Actions</th>
+                        <th class="px-6 py-4 font-semibold">{{ t('nav.roles') }}</th>
+                        <th class="px-6 py-4 font-semibold">{{ t('admin.api_keys.rate_limit') }}</th>
+                        <th class="px-6 py-4 font-semibold">{{ t('admin.api_keys.last_used') }}</th>
+                        <th class="px-6 py-4 font-semibold">{{ t('admin.api_keys.created_at') }}</th>
+                        <th class="px-6 py-4 font-semibold text-right">{{ t('invoices.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-dark-100">
@@ -36,11 +36,11 @@
                         <td class="px-6 py-4 font-mono text-xs">{{ key.to_dict().key_masked }}</td>
                         <td class="px-6 py-4">
                             {% if key.status == 'active' %}
-                                <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Actif</span>
+                                <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">{{ t('admin.api_keys.status_active') }}</span>
                             {% elif key.status == 'suspended' %}
-                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">Suspendu</span>
+                                <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">{{ t('admin.api_keys.status_suspended') }}</span>
                             {% else %}
-                                <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">Révoqué</span>
+                                <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">{{ t('admin.api_keys.status_revoked') }}</span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4">{{ key.role }}</td>
@@ -49,7 +49,7 @@
                             {% if key.last_used_at %}
                                 {{ key.last_used_at.strftime('%Y-%m-%d %H:%M') }}
                             {% else %}
-                                <em class="text-gray-600">Jamais</em>
+                                <em class="text-gray-600">{{ t('admin.api_keys.never_used') }}</em>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4">{{ key.created_at.strftime('%Y-%m-%d') }}</td>
@@ -57,15 +57,15 @@
                             {% if key.status != 'revoked' %}
                             <div class="flex items-center justify-end gap-2">
                                 {% if key.status == 'active' %}
-                                    <button onclick="actionKey({{ key.id }}, 'suspend')" class="p-1 text-yellow-500 hover:text-yellow-400" title="Suspendre">
+                                    <button onclick="actionKey({{ key.id }}, 'suspend')" class="p-1 text-yellow-500 hover:text-yellow-400" title="{{ t('admin.api_keys.suspend') }}">
                                         <i class="fas fa-pause"></i>
                                     </button>
                                 {% else %}
-                                    <button onclick="actionKey({{ key.id }}, 'reactivate')" class="p-1 text-green-500 hover:text-green-400" title="Réactiver">
+                                    <button onclick="actionKey({{ key.id }}, 'reactivate')" class="p-1 text-green-500 hover:text-green-400" title="{{ t('admin.api_keys.reactivate') }}">
                                         <i class="fas fa-play"></i>
                                     </button>
                                 {% endif %}
-                                <button onclick="actionKey({{ key.id }}, 'revoke')" class="p-1 text-red-500 hover:text-red-400" title="Révoquer">
+                                <button onclick="actionKey({{ key.id }}, 'revoke')" class="p-1 text-red-500 hover:text-red-400" title="{{ t('admin.api_keys.revoke') }}">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -83,7 +83,7 @@
 <div id="modalOverlay" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center backdrop-blur-sm">
     <div class="bg-dark-400 rounded-xl border border-dark-100 shadow-2xl w-full max-w-md mx-4 overflow-hidden transform transition-all scale-100">
         <div class="p-6 border-b border-dark-100 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-white">Nouvelle Clé API</h3>
+            <h3 class="text-lg font-semibold text-white">{{ t('admin.api_keys.modal_title') }}</h3>
             <button onclick="closeModal()" class="text-gray-400 hover:text-white">
                 <i class="fas fa-times"></i>
             </button>
@@ -92,27 +92,27 @@
         <div class="p-6 space-y-4">
             <form id="createKeyForm" class="space-y-4">
                 <div>
-                    <label for="keyName" class="block text-sm font-medium text-gray-400 mb-1">Nom du système / client</label>
+                    <label for="keyName" class="block text-sm font-medium text-gray-400 mb-1">{{ t('admin.api_keys.label_name') }}</label>
                     <input type="text" id="keyName" name="name" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500" placeholder="ex: Ministère Transports" required>
                 </div>
                 <div>
-                    <label for="rateLimit" class="block text-sm font-medium text-gray-400 mb-1">Rate Limit (req/min)</label>
+                    <label for="rateLimit" class="block text-sm font-medium text-gray-400 mb-1">{{ t('admin.api_keys.label_rate_limit') }}</label>
                     <input type="number" id="rateLimit" name="rate_limit" value="60" min="1" max="1000" class="w-full bg-dark-500 border border-dark-100 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500">
                 </div>
             </form>
 
             <div id="newKeyDisplay" class="hidden p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p class="text-green-400 font-medium text-sm mb-2">Clé générée ! Copiez-la maintenant.</p>
+                <p class="text-green-400 font-medium text-sm mb-2">{{ t('admin.api_keys.success_msg') }}</p>
                 <div class="flex gap-2">
                     <input type="text" id="generatedKey" readonly class="flex-1 bg-dark-500 border border-dark-100 rounded px-3 py-1 text-sm text-white font-mono">
-                    <button onclick="copyKey()" class="px-3 py-1 bg-dark-300 hover:bg-dark-200 rounded text-sm text-white">Copier</button>
+                    <button onclick="copyKey()" class="px-3 py-1 bg-dark-300 hover:bg-dark-200 rounded text-sm text-white">{{ t('admin.api_keys.copy') }}</button>
                 </div>
             </div>
         </div>
 
         <div class="p-6 border-t border-dark-100 bg-dark-300/50 flex justify-end gap-3">
-            <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Fermer</button>
-            <button id="btnGenerate" onclick="generateKey()" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors">Générer</button>
+            <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">{{ t('admin.api_keys.close') }}</button>
+            <button id="btnGenerate" onclick="generateKey()" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-colors">{{ t('admin.api_keys.generate') }}</button>
         </div>
     </div>
 </div>
@@ -125,6 +125,14 @@
     const form = document.getElementById('createKeyForm');
     const display = document.getElementById('newKeyDisplay');
     const btn = document.getElementById('btnGenerate');
+    const i18n = {
+        name_required: "{{ t('admin.api_keys.name_required') }}",
+        generating: "{{ t('admin.api_keys.generating') }}",
+        generate: "{{ t('admin.api_keys.generate') }}",
+        confirm_action: "{{ t('admin.api_keys.confirm_action') }}",
+        generic_error: "{{ t('common.error.generic') }}",
+        unknown_error: "{{ t('common.error.unknown') }}"
+    };
 
     function openModal() {
         modal.classList.remove('hidden');
@@ -133,7 +141,7 @@
         display.classList.add('hidden');
         btn.classList.remove('hidden');
         btn.disabled = false;
-        btn.innerHTML = 'Générer';
+        btn.innerHTML = i18n.generate;
     }
 
     function closeModal() {
@@ -148,12 +156,12 @@
         const rateLimit = document.getElementById('rateLimit').value;
 
         if(!name) {
-            alert("Nom requis");
+            alert(i18n.name_required);
             return;
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + i18n.generating;
 
         const formData = new FormData();
         formData.append('name', name);
@@ -177,16 +185,16 @@
                 document.getElementById('generatedKey').value = data.key;
                 btn.classList.add('hidden');
             } else {
-                alert('Erreur: ' + data.error);
+                alert(i18n.generic_error + ': ' + data.error);
                 btn.disabled = false;
-                btn.innerHTML = 'Générer';
+                btn.innerHTML = i18n.generate;
             }
         })
         .catch(err => {
             console.error(err);
-            alert('Erreur technique');
+            alert(i18n.unknown_error);
             btn.disabled = false;
-            btn.innerHTML = 'Générer';
+            btn.innerHTML = i18n.generate;
         });
     }
 
@@ -199,7 +207,7 @@
     }
 
     function actionKey(id, action) {
-        if(!confirm('Confirmer l\'action : ' + action + ' ?')) return;
+        if(!confirm(i18n.confirm_action + action + ' ?')) return;
 
         const csrfToken = window.baseContext ? window.baseContext.csrfToken : '';
         const formData = new FormData();
@@ -217,7 +225,7 @@
             if(data.success) {
                 location.reload();
             } else {
-                alert('Erreur: ' + data.error);
+                alert(i18n.generic_error + ': ' + data.error);
             }
         });
     }

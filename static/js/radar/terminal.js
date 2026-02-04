@@ -1,5 +1,6 @@
     const FREE_PARKING_HOURS = 1;
     const PARKING_RATE_PER_HOUR = 25;
+    const i18n = window.radarTerminalContext.i18n;
 
     function updateParkingTimers() {
         document.querySelectorAll('.parking-timer').forEach(el => {
@@ -32,7 +33,7 @@
             } else {
                 const remaining = (FREE_PARKING_HOURS * 3600) - diffSecs;
                 const remMins = Math.floor(remaining / 60);
-                billableEl.innerHTML = `<span class="text-green-400">Gratuit (${remMins}m restant)</span>`;
+                billableEl.innerHTML = `<span class="text-green-400">${i18n.terminal.free} (${remMins}m ${i18n.terminal.remaining})</span>`;
                 el.classList.add('text-blue-400');
                 el.classList.remove('text-yellow-400');
             }
@@ -56,7 +57,7 @@
     }
 
     function confirmLanding(flightId) {
-        if (!confirm('Confirmer l\'atterrissage de ce vol?')) return;
+        if (!confirm(i18n.terminal.confirm_landing)) return;
 
         fetch(`/api/flights/${flightId}/land`, {
             method: 'POST',
@@ -67,14 +68,16 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('Erreur: ' + (data.error || 'Impossible de confirmer'));
+                const prefix = i18n.common.error.generic || 'Error';
+                const unknown = i18n.common.error.unknown || 'Unknown error';
+                alert(prefix + ': ' + (data.error || unknown));
             }
         })
         .catch(e => console.error('Error:', e));
     }
 
     function recordDeparture(flightId) {
-        if (!confirm('Enregistrer le départ de cet aéronef?')) return;
+        if (!confirm(i18n.terminal.confirm_departure)) return;
 
         fetch(`/api/flights/${flightId}/depart`, {
             method: 'POST',
@@ -85,7 +88,9 @@
             if (data.success) {
                 window.location.reload();
             } else {
-                alert('Erreur: ' + (data.error || 'Impossible d\'enregistrer'));
+                const prefix = i18n.common.error.generic || 'Error';
+                const unknown = i18n.common.error.unknown || 'Unknown error';
+                alert(prefix + ': ' + (data.error || unknown));
             }
         })
         .catch(e => console.error('Error:', e));

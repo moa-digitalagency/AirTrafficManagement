@@ -181,11 +181,11 @@
                             <!-- Dropdown Menu -->
                             <div id="notifications-menu" class="hidden absolute right-0 mt-2 w-80 bg-dark-400 border border-dark-100 rounded-xl shadow-lg overflow-hidden z-50">
                                 <div class="p-3 border-b border-dark-100 flex items-center justify-between">
-                                    <h3 class="text-sm font-semibold text-white">Notifications</h3>
-                                    <button onclick="markAllRead()" class="text-xs text-primary-400 hover:text-primary-300">Tout marquer comme lu</button>
+                                    <h3 class="text-sm font-semibold text-white">{{ t('notifications.title') }}</h3>
+                                    <button onclick="markAllRead()" class="text-xs text-primary-400 hover:text-primary-300">{{ t('notifications.mark_all_read') }}</button>
                                 </div>
                                 <div id="notifications-list" class="max-h-96 overflow-y-auto">
-                                    <div class="p-4 text-center text-gray-500 text-sm">Chargement...</div>
+                                    <div class="p-4 text-center text-gray-500 text-sm">{{ t('common.loading') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -193,12 +193,12 @@
                         {% if current_user.role == 'superadmin' %}
                         <button id="system-switch-btn" onclick="toggleSystemStatus()" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 disabled:opacity-50 border border-transparent" disabled>
                             <i class="fas fa-power-off"></i>
-                            <span id="system-status-text">Checking...</span>
+                            <span id="system-status-text">{{ t('common.processing') }}</span>
                         </button>
                         {% else %}
                         <div id="system-status-badge" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-all duration-300">
                             <span class="w-2 h-2 rounded-full status-dot"></span>
-                            <span id="system-status-text-badge">Checking...</span>
+                            <span id="system-status-text-badge">{{ t('common.processing') }}</span>
                         </div>
                         {% endif %}
                     </div>
@@ -231,7 +231,12 @@
         window.baseContext = {
             isAuthenticated: {{ 'true' if current_user.is_authenticated else 'false' }},
             {% if current_user.is_authenticated %}
-            csrfToken: "{{ csrf_token() }}"
+            csrfToken: "{{ csrf_token() }}",
+            i18n: {
+                system: {{ t('system') | tojson }},
+                notifications: {{ t('notifications') | tojson }},
+                common: {{ t('common') | tojson }}
+            }
             {% endif %}
         };
     </script>
@@ -251,16 +256,16 @@
                                 <i class="fas fa-power-off text-red-600"></i>
                             </div>
                             <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                <h3 class="text-base font-semibold leading-6 text-white" id="modal-title">Confirmation</h3>
+                                <h3 class="text-base font-semibold leading-6 text-white" id="modal-title">{{ t('common.confirmation') }}</h3>
                                 <div class="mt-2">
-                                    <p class="text-sm text-gray-300" id="modal-message">Are you sure?</p>
+                                    <p class="text-sm text-gray-300" id="modal-message">{{ t('common.are_you_sure') }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="bg-dark-300 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        <button type="button" id="confirm-system-btn" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">Confirmer</button>
-                        <button type="button" onclick="closeSystemModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Annuler</button>
+                        <button type="button" id="confirm-system-btn" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">{{ t('common.confirm') }}</button>
+                        <button type="button" onclick="closeSystemModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">{{ t('common.cancel') }}</button>
                     </div>
                 </div>
             </div>

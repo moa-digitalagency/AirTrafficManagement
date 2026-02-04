@@ -114,7 +114,59 @@
         "ground_speed": "Ground Speed",
         "scan_effect": "Radar Effect",
         "toggle_scan": "Scan",
-        "immersive_mode": "Immersion"
+        "immersive_mode": "Immersion",
+        "session": "Session",
+        "overflights": {
+            "page_title": "Overflights & Geofencing",
+            "subtitle": "Detection of overflights in DRC airspace",
+            "active": "Active Overflights",
+            "completed_today": "Completed Today",
+            "total_distance": "Total Distance",
+            "unbilled": "Unbilled",
+            "realtime_trajectories": "Real-time Trajectories",
+            "no_active": "No active overflights",
+            "recent_completed": "Recent Overflights (Completed)",
+            "no_recent": "No recent overflights",
+            "confirm_invoice": "Generate invoice for this overflight?",
+            "auto_appear": "Overflights will appear here automatically"
+        },
+        "terminal": {
+            "page_title": "Airport Radar",
+            "subtitle": "Ground movement management - Landing Cycle",
+            "approaching": "Approaching",
+            "en_route": "En Route",
+            "on_ground": "On Ground",
+            "total_inbound": "Total Inbound",
+            "active_airports": "Active Airports",
+            "queue_title": "Inbound Queue",
+            "queue_empty": "Queue empty - No arrivals scheduled",
+            "ground_title": "Aircraft on Ground (Parking)",
+            "ground_empty": "No aircraft on ground",
+            "cycle_title": "Landing Cycle",
+            "step1": "1. Approach",
+            "step1_desc": "Descent to airport",
+            "step2": "2. Touchdown",
+            "step2_desc": "Runway contact",
+            "step3": "3. Taxi",
+            "step3_desc": "Taxi to parking",
+            "step4": "4. Parking",
+            "step4_desc": "Parking (1h free)",
+            "airports_rdc": "DRC Airports",
+            "daily_summary": "Daily Summary",
+            "free": "Free",
+            "remaining": "remaining",
+            "confirm_landing": "Confirm landing for this flight?",
+            "confirm_departure": "Record departure for this aircraft?",
+            "parking_hours": "Parking Hours",
+            "landings": "Landings",
+            "departures_today": "Departures Today",
+            "parking_duration": "Parking Duration",
+            "billable": "Billable"
+        },
+        "tooltip": {
+            "entry": "Entry",
+            "exit": "Exit"
+        }
     },
     "flights": {
         "callsign": "Callsign",
@@ -204,7 +256,8 @@
         "confirm_payment": "Confirm Payment",
         "upload_proof_instruction": "Please upload proof of payment to validate this invoice.",
         "confirm": "Confirm",
-        "no_billable_items": "No billable items found."
+        "no_billable_items": "No billable items found.",
+        "generate_plural": "Generate Invoices"
     },
     "admin": {
         "users": "Users",
@@ -238,16 +291,57 @@
         "settings_updated": "{count} setting(s) updated.",
         "no_changes": "No changes detected.",
         "lang_file_uploaded": "Language file {filename} uploaded.",
-        "lang_toggled": "Language {lang} {status}."
+        "lang_toggled": "Language {lang} {status}.",
+        "api_keys": {
+            "title": "API Key Management",
+            "page_title": "External API Key Management",
+            "subtitle": "Manage third-party system access",
+            "active_keys": "Active API Keys",
+            "generate_key": "Generate Key",
+            "name": "Name",
+            "key_masked": "Key (Masked)",
+            "rate_limit": "Rate Limit",
+            "last_used": "Last Used",
+            "created_at": "Created At",
+            "never_used": "Never",
+            "suspend": "Suspend",
+            "reactivate": "Reactivate",
+            "revoke": "Revoke",
+            "status_active": "Active",
+            "status_suspended": "Suspended",
+            "status_revoked": "Revoked",
+            "modal_title": "New API Key",
+            "label_name": "System / Client Name",
+            "label_rate_limit": "Rate Limit (req/min)",
+            "success_msg": "Key generated! Copy it now.",
+            "copy": "Copy",
+            "close": "Close",
+            "generate": "Generate",
+            "generating": "Generating...",
+            "name_required": "Name required",
+            "confirm_action": "Confirm action: "
+        },
+        "airspace_map": {
+            "page_title": "Airspace Configuration",
+            "subtitle": "Definition of surveillance zone (DRC)",
+            "map_title": "Interactive Map",
+            "instructions": "Use drawing tools to define airspace boundaries. Double-click to finish a polygon.",
+            "draw_error": "<strong>Error:</strong> Boundaries cannot intersect!",
+            "draw_empty": "Please draw a zone before saving.",
+            "multiple_zones": "Warning: Multiple zones detected. Only the first one or a merger will be saved. Continue?",
+            "save_success": "Configuration saved successfully!",
+            "save_error": "Error saving: "
+        }
     },
     "common": {
-        "enabled": "Enabled",
-        "disabled": "Disabled",
         "save": "Save",
         "cancel": "Cancel",
         "delete": "Delete",
         "edit": "Edit",
         "view": "View",
+        "back": "Back",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
         "search": "Search",
         "filter": "Filter",
         "export": "Export",
@@ -259,7 +353,22 @@
         "loading": "Loading",
         "showing": "Showing",
         "of": "of",
-        "page": "Page"
+        "page": "Page",
+        "duration": "Duration",
+        "distance": "Distance",
+        "seq": "Seq",
+        "processing": "Processing...",
+        "calculating": "Calculating...",
+        "view_history": "View History",
+        "confirmation": "Confirmation",
+        "are_you_sure": "Are you sure?",
+        "confirm": "Confirm",
+        "error": {
+            "connection": "Connection Error",
+            "unknown": "Unknown Error",
+            "generic": "Error"
+        },
+        "success": "Success"
     },
     "status": {
         "scheduled": "Scheduled",
@@ -312,7 +421,12 @@
         "landing_title": "Landing: {callsign}",
         "landing_msg": "Landing detected at {airport}. Landing fees applicable.",
         "parking_completed_title": "Parking completed: {callsign}",
-        "parking_completed_msg": "Parking completed at {airport}. Duration: {duration} min."
+        "parking_completed_msg": "Parking completed at {airport}. Duration: {duration} min.",
+        "empty": "No notifications",
+        "mark_read": "Mark as read",
+        "mark_all_read": "Mark all as read",
+        "loading_error": "Loading error",
+        "title": "Notifications"
     },
     "system_notes": {
         "overflight_fmt": "Overflight: {session_id}, Distance: {distance} km, MTOW: {mtow} tonnes",
@@ -375,5 +489,30 @@
         "total": "TOTAL:",
         "bank_details": "Bank Details:",
         "generated_footer": "Generated on {date} by {user}"
+    },
+    "system": {
+        "status": {
+            "active": "System: ACTIVE",
+            "stopped": "System: STOPPED"
+        },
+        "modal": {
+            "stop_title": "Stop System?",
+            "stop_message": "Do you want to stop the entire system? Surveillance, billing, and the Bot will be suspended.",
+            "start_title": "Start System?",
+            "start_message": "Start ATM-RDC services?"
+        }
+    },
+    "billing": {
+        "status": {
+            "billed": "Billed",
+            "pending": "Pending"
+        },
+        "generated_success": "Invoice generated successfully!"
+    },
+    "errors": {
+        "500_title": "500 - Server Error",
+        "500_message": "Internal Server Error",
+        "500_detail": "An unexpected error occurred. Our team has been notified.",
+        "return_home": "Return to Home"
     }
 }

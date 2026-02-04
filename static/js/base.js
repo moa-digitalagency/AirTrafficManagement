@@ -27,6 +27,7 @@ setInterval(updateTime, 1000);
 updateTime();
 
 if (window.baseContext && window.baseContext.isAuthenticated) {
+    const i18n = window.baseContext.i18n || {};
     let lastNotificationCount = 0;
 
     // Request browser notification permission
@@ -121,7 +122,7 @@ if (window.baseContext && window.baseContext.isAuthenticated) {
                 const data = await res.json();
 
                 if (data.length === 0) {
-                    list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Aucune notification</div>';
+                    list.innerHTML = `<div class="p-4 text-center text-gray-500 text-sm">${i18n.notifications.empty}</div>`;
                 } else {
                     list.innerHTML = data.map(n => `
                         <div class="p-3 border-b border-dark-100 hover:bg-dark-300 transition-colors ${n.is_read ? 'opacity-60' : ''}">
@@ -136,14 +137,14 @@ if (window.baseContext && window.baseContext.isAuthenticated) {
                                     </div>
                                 </div>
                                 ${!n.is_read ? `
-                                <button onclick="markRead(${n.id})" class="text-xs text-primary-400" title="Marquer comme lu"><i class="fas fa-check"></i></button>
+                                <button onclick="markRead(${n.id})" class="text-xs text-primary-400" title="${i18n.notifications.mark_read}"><i class="fas fa-check"></i></button>
                                 ` : ''}
                             </div>
                         </div>
                     `).join('');
                 }
             } catch (e) {
-                list.innerHTML = '<div class="p-4 text-center text-red-400 text-sm">Erreur de chargement</div>';
+                list.innerHTML = `<div class="p-4 text-center text-red-400 text-sm">${i18n.notifications.loading_error}</div>`;
             }
         }
     }
@@ -218,8 +219,10 @@ function updateSystemUI(active) {
     const badgeOnClass = 'bg-green-500/20 text-green-400 border-green-500/30';
     const badgeOffClass = 'bg-red-500/20 text-red-400 border-red-500/30';
 
-    const onText = 'Système : ACTIF';
-    const offText = 'Système : ARRÊT';
+    // Use i18n
+    const i18n = window.baseContext && window.baseContext.i18n ? window.baseContext.i18n : {};
+    const onText = i18n.system && i18n.system.status ? i18n.system.status.active : 'System: ACTIVE';
+    const offText = i18n.system && i18n.system.status ? i18n.system.status.stopped : 'System: STOPPED';
 
     if (btn) {
         btn.disabled = false;
@@ -254,17 +257,20 @@ function toggleSystemStatus() {
     const iconContainer = document.getElementById('modal-icon-container');
     const icon = iconContainer.querySelector('i');
 
+    // Use i18n
+    const i18n = window.baseContext && window.baseContext.i18n ? window.baseContext.i18n : {};
+
     if (systemActive) {
         // Current: Active. Action: Turn OFF.
-        title.textContent = "Arrêter le système ?";
-        msg.textContent = "Voulez-vous arrêter tout le système ? La surveillance, la facturation et le Bot seront suspendus.";
+        title.textContent = i18n.system && i18n.system.modal ? i18n.system.modal.stop_title : "Stop System?";
+        msg.textContent = i18n.system && i18n.system.modal ? i18n.system.modal.stop_message : "Stop services?";
         confirmBtn.className = "inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto";
         iconContainer.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10";
         icon.className = "fas fa-power-off text-red-600";
     } else {
         // Current: Off. Action: Turn ON.
-        title.textContent = "Démarrer le système ?";
-        msg.textContent = "Démarrer les services ATM-RDC ?";
+        title.textContent = i18n.system && i18n.system.modal ? i18n.system.modal.start_title : "Start System?";
+        msg.textContent = i18n.system && i18n.system.modal ? i18n.system.modal.start_message : "Start services?";
         confirmBtn.className = "inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto";
         iconContainer.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10";
         icon.className = "fas fa-bolt text-green-600";
@@ -273,7 +279,7 @@ function toggleSystemStatus() {
     // Bind click
     confirmBtn.onclick = async () => {
         confirmBtn.disabled = true;
-        confirmBtn.textContent = "Traitement...";
+        confirmBtn.textContent = i18n.common ? i18n.common.processing : "Processing...";
 
         try {
             const res = await fetch('/api/system/toggle', {
@@ -291,10 +297,13 @@ function toggleSystemStatus() {
                 updateSystemUI(systemActive);
                 closeSystemModal();
             } else {
-                alert('Erreur: ' + (data.error || 'Unknown error'));
+                const errPrefix = i18n.common && i18n.common.error ? i18n.common.error.generic : 'Error';
+                const unknown = i18n.common && i18n.common.error ? i18n.common.error.unknown : 'Unknown error';
+                alert(`${errPrefix}: ${data.error || unknown}`);
             }
         } catch(e) {
-            alert('Erreur de connexion');
+            const connErr = i18n.common && i18n.common.error ? i18n.common.error.connection : 'Connection Error';
+            alert(connErr);
         } finally {
             confirmBtn.disabled = false;
         }
