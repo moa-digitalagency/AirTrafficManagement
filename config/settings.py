@@ -77,7 +77,9 @@ class Config:
     # ============================================
     # TELEGRAM BOT CONFIGURATION
     # ============================================
+    TELEGRAM_BOT_ENABLE = os.environ.get('TELEGRAM_BOT_ENABLE', 'False').lower() in ('true', '1', 't')
     TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+    TELEGRAM_ADMIN_CHANNEL_ID = os.environ.get('TELEGRAM_ADMIN_CHANNEL_ID')
 
     # ============================================
     # FILE UPLOADS
