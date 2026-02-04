@@ -208,11 +208,13 @@ function updateSystemUI(active) {
     const btn = document.getElementById('system-switch-btn');
     const badge = document.getElementById('system-status-badge');
 
-    // Button UI Config (Solid)
+    // Explicit Colors:
+    // ACTIVE = GREEN (bg-green-600)
+    // OFF = RED (bg-red-600)
     const btnOnClass = 'bg-green-600 text-white hover:bg-green-500 border-green-500 shadow-lg shadow-green-900/50';
     const btnOffClass = 'bg-red-600 text-white hover:bg-red-500 border-red-500 shadow-lg shadow-red-900/50';
 
-    // Badge UI Config (Subtle)
+    // Badge UI (User View)
     const badgeOnClass = 'bg-green-500/20 text-green-400 border-green-500/30';
     const badgeOffClass = 'bg-red-500/20 text-red-400 border-red-500/30';
 
@@ -224,12 +226,13 @@ function updateSystemUI(active) {
         const text = btn.querySelector('#system-status-text');
         const icon = btn.querySelector('i');
 
-        btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 border ${active ? btnOnClass : btnOffClass}`;
+        // Remove transition to avoid "Yellow" intermediate state during color flip
+        btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${active ? btnOnClass : btnOffClass}`;
         text.textContent = active ? onText : offText;
 
         if (active) {
              btn.classList.add('animate-pulse');
-             icon.className = 'fas fa-power-off';
+             icon.className = 'fas fa-power-off'; // Or fa-bolt? User said 'Power On'. fa-power-off is standard.
         } else {
              btn.classList.remove('animate-pulse');
              icon.className = 'fas fa-power-off';
@@ -252,14 +255,14 @@ function toggleSystemStatus() {
     const icon = iconContainer.querySelector('i');
 
     if (systemActive) {
-        // Turn OFF
+        // Current: Active. Action: Turn OFF.
         title.textContent = "Arrêter le système ?";
         msg.textContent = "Voulez-vous arrêter tout le système ? La surveillance, la facturation et le Bot seront suspendus.";
         confirmBtn.className = "inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto";
         iconContainer.className = "mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10";
         icon.className = "fas fa-power-off text-red-600";
     } else {
-        // Turn ON
+        // Current: Off. Action: Turn ON.
         title.textContent = "Démarrer le système ?";
         msg.textContent = "Démarrer les services ATM-RDC ?";
         confirmBtn.className = "inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 sm:ml-3 sm:w-auto";
