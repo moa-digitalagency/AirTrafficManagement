@@ -48,6 +48,7 @@ def create_app():
 def check_and_update_schema(app):
     """
     Vérifie et met à jour le schéma de la base de données (ajout de colonnes manquantes).
+    Implémente la logique d'idempotence et de migration 'n-1' requise pour le déploiement VPS.
     """
     with app.app_context():
         logger.info("2b. Vérification des colonnes manquantes (Migration)...")
@@ -88,6 +89,10 @@ def init_database():
     
     with app.app_context():
         logger.info("=== Initialisation de la base de données ATM-RDC ===")
+
+        if os.environ.get('DISABLE_POSTGIS'):
+            logger.warning("!!! MODE SANS POSTGIS ACTIVÉ (DISABLE_POSTGIS=1) !!!")
+            logger.warning("    Les colonnes géométriques seront créées en tant que TEXTE.")
         
         # 1. PostGIS Extension
         logger.info("1. Vérification de l'extension PostGIS...")

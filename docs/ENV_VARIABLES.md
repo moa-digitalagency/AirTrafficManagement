@@ -15,6 +15,7 @@ Ces variables configurent le cœur de l'application Flask et la connexion à la 
 | `SESSION_SECRET` | Clé secrète pour signer les cookies de session. | Générer une chaîne aléatoire longue (ex: `openssl rand -hex 32`). |
 | `DATABASE_URL` | URL de connexion PostgreSQL. | Format: `postgresql://user:password@host:port/dbname`. Assurez-vous d'avoir une instance PostgreSQL avec PostGIS. |
 | `WTF_CSRF_SECRET_KEY` | Clé pour la protection CSRF des formulaires. | Générer une chaîne aléatoire longue (peut être différente de `SESSION_SECRET`). |
+| `DISABLE_POSTGIS` | Désactive les fonctionnalités géospatiales (PostGIS). | `1` ou `true`. Utile pour le développement local avec SQLite ou si PostGIS n'est pas disponible. |
 
 ---
 
