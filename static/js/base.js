@@ -276,7 +276,7 @@ function toggleSystemStatus() {
         confirmBtn.textContent = "Traitement...";
 
         try {
-            const res = await fetch('/api/system/status', {
+            const res = await fetch('/api/system/toggle', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
