@@ -38,6 +38,7 @@ def require_api_key(f):
             return jsonify({'error': 'Invalid or inactive API Key'}), 403
 
         # Rate Limiting
+        requests_count = 0
         try:
             r = get_redis_client()
             # Key format: rate_limit:{api_key_id}:{minute_timestamp}
@@ -94,6 +95,18 @@ def require_api_key(f):
         # Store api_key in g for the route to use if needed
         g.api_key = api_key
 
-        return f(*args, **kwargs)
+        # Execute the function and ensure it's a response object
+        response = current_app.make_response(f(*args, **kwargs))
+
+        # Inject Rate Limit Headers
+        # requests_count is initialized to 0, so if redis fails it stays 0 (unlimited appearance)
+        # or we could omit headers if redis failed.
+        # But if it succeeded, requests_count is set.
+        if requests_count > 0:
+            remaining = max(0, api_key.rate_limit - requests_count)
+            response.headers['X-RateLimit-Limit'] = str(api_key.rate_limit)
+            response.headers['X-RateLimit-Remaining'] = str(remaining)
+
+        return response
 
     return decorated_function

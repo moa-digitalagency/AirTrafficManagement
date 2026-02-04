@@ -18,6 +18,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from models import db, TelegramSubscriber
 from services.notification_service import NotificationService
+from services.translation_service import t
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -80,10 +81,10 @@ class TelegramService:
         dest = flight.arrival_icao or "N/A"
 
         msg = (
-            f"🛬 *Entrée Espace Aérien*\n"
-            f"Vol: `{callsign}`\n"
-            f"Trajet: {origin} ➡️ {dest}\n"
-            f"Type: {flight.flight_type.upper() if flight.flight_type else 'N/A'}"
+            f"{t('notifications.entry_title', 'fr')}\n"
+            f"{t('notifications.entry_flight', 'fr')}: `{callsign}`\n"
+            f"{t('notifications.entry_route', 'fr')}: {origin} ➡️ {dest}\n"
+            f"{t('notifications.entry_type', 'fr')}: {flight.flight_type.upper() if flight.flight_type else 'N/A'}"
         )
 
         for sub in subscribers:
@@ -107,10 +108,10 @@ class TelegramService:
         alt = f"FL{int(overflight.exit_alt/100)}" if overflight.exit_alt else "N/A"
 
         msg = (
-            f"🛫 *Sortie de Zone*\n"
-            f"Vol: `{callsign}`\n"
-            f"Dist: {dist} | Durée: {dur}\n"
-            f"Exit Alt: {alt}"
+            f"{t('notifications.exit_title', 'fr')}\n"
+            f"{t('notifications.entry_flight', 'fr')}: `{callsign}`\n"
+            f"{t('notifications.exit_dist', 'fr')}: {dist} | {t('notifications.exit_dur', 'fr')}: {dur}\n"
+            f"{t('notifications.exit_alt', 'fr')}: {alt}"
         )
 
         for sub in subscribers:
@@ -129,11 +130,11 @@ class TelegramService:
         airline = invoice.airline.name if invoice.airline else "Inconnu"
 
         msg = (
-            f"💰 *Facture Générée*\n"
-            f"Ref: `{invoice.invoice_number}`\n"
-            f"Client: {airline}\n"
-            f"Montant: *{amount}*\n"
-            f"Type: {invoice.invoice_type}"
+            f"{t('notifications.billing_title', 'fr')}\n"
+            f"{t('notifications.billing_ref', 'fr')}: `{invoice.invoice_number}`\n"
+            f"{t('notifications.billing_client', 'fr')}: {airline}\n"
+            f"{t('notifications.billing_amount', 'fr')}: *{amount}*\n"
+            f"{t('notifications.billing_type', 'fr')}: {invoice.invoice_type}"
         )
 
         for sub in subscribers:
@@ -150,8 +151,14 @@ class TelegramService:
 
         icon = "🚨" if severity in ['CRITICAL', 'HIGH'] else "⚠️"
 
+        # Use template but replace icon if needed, or construct manually if template includes icon
+        # Template: 🚨 *ALERTE: {title}*
+        title_text = t('notifications.alert_title_fmt', 'fr').format(title=title)
+        if icon != "🚨":
+             title_text = title_text.replace("🚨", icon)
+
         msg = (
-            f"{icon} *ALERTE: {title}*\n"
+            f"{title_text}\n"
             f"{message}"
         )
 
@@ -198,19 +205,15 @@ def register_bot_handlers(app_context_provider):
                 db.session.commit()
 
                 # Respond with OTP
-                msg = (
-                    "🔒 **Sécurité Renforcée**\n"
-                    "Votre demande est en attente. Pour finaliser l'activation, communiquez le code suivant à votre administrateur (par téléphone ou email) :\n\n"
-                    f"**{otp_code[:3]} {otp_code[3:]}**\n\n"
-                    "*Ce code est unique à votre demande.*"
-                )
+                otp_fmt = f"{otp_code[:3]} {otp_code[3:]}"
+                msg = t('notifications.pending_msg', 'fr').format(code_formatted=otp_fmt)
                 bot.reply_to(message, msg, parse_mode='Markdown')
 
                 # Notify Internal Admins
                 NotificationService.notify_admins(
                     type='security',
-                    title="Nouvelle demande Telegram",
-                    message=f"Utilisateur {username} ({first_name}) demande l'accès au Bot.",
+                    title=t('notifications.new_request_title', 'fr'),
+                    message=t('notifications.new_request_msg', 'fr').format(username=username, first_name=first_name),
                     link="/admin/telegram"
                 )
 
@@ -224,19 +227,16 @@ def register_bot_handlers(app_context_provider):
                 else:
                     otp_code = subscriber.verification_code
 
-                msg = (
-                    "🔒 **Sécurité Renforcée**\n"
-                    "Votre demande est en attente. Pour finaliser l'activation, communiquez le code suivant à votre administrateur (par téléphone ou email) :\n\n"
-                    f"**{otp_code[:3]} {otp_code[3:]}**\n\n"
-                    "*Ce code est unique à votre demande.*"
-                )
+                otp_fmt = f"{otp_code[:3]} {otp_code[3:]}"
+                msg = t('notifications.pending_msg', 'fr').format(code_formatted=otp_fmt)
                 bot.reply_to(message, msg, parse_mode='Markdown')
 
             elif subscriber.status == 'APPROVED':
-                bot.reply_to(message, f"✅ Bienvenue, {first_name}!\n\nUtilisez /settings pour configurer vos notifications.")
+                msg = t('notifications.welcome_msg', 'fr').format(name=first_name)
+                bot.reply_to(message, msg)
 
             elif subscriber.status in ['REJECTED', 'REVOKED']:
-                bot.reply_to(message, "⛔ Accès refusé.")
+                bot.reply_to(message, t('notifications.access_denied', 'fr'))
 
     @bot.message_handler(commands=['settings'])
     def handle_settings(message):
@@ -246,7 +246,7 @@ def register_bot_handlers(app_context_provider):
             subscriber = TelegramSubscriber.query.filter_by(telegram_chat_id=chat_id).first()
 
             if not subscriber or subscriber.status != 'APPROVED':
-                bot.reply_to(message, "⛔ Non autorisé.")
+                bot.reply_to(message, t('notifications.not_authorized', 'fr'))
                 return
 
             # Build Inline Keyboard
@@ -255,11 +255,11 @@ def register_bot_handlers(app_context_provider):
 
             # Map keys to labels
             options = [
-                ('notify_entry', '🛬 Entrées Zone'),
-                ('notify_exit', '🛫 Sorties Zone'),
-                ('notify_alerts', '🚨 Alertes/Urgences'),
-                ('notify_billing', '💰 Facturation'),
-                ('notify_daily_report', '📊 Rapport 24h')
+                ('notify_entry', t('notifications.setting_entry', 'fr')),
+                ('notify_exit', t('notifications.setting_exit', 'fr')),
+                ('notify_alerts', t('notifications.setting_alerts', 'fr')),
+                ('notify_billing', t('notifications.setting_billing', 'fr')),
+                ('notify_daily_report', t('notifications.setting_daily', 'fr'))
             ]
 
             for key, label in options:
@@ -268,7 +268,7 @@ def register_bot_handlers(app_context_provider):
                 # Callback data: toggle:key
                 markup.add(InlineKeyboardButton(f"{label} {status_icon}", callback_data=f"toggle:{key}"))
 
-            bot.send_message(chat_id, "⚙️ *Paramètres de Notification*\nCliquez pour activer/désactiver :", reply_markup=markup, parse_mode='Markdown')
+            bot.send_message(chat_id, t('notifications.settings_title', 'fr'), reply_markup=markup, parse_mode='Markdown')
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith('toggle:'))
     def callback_query(call):
@@ -279,7 +279,7 @@ def register_bot_handlers(app_context_provider):
             subscriber = TelegramSubscriber.query.filter_by(telegram_chat_id=chat_id).first()
 
             if not subscriber or subscriber.status != 'APPROVED':
-                bot.answer_callback_query(call.id, "Non autorisé")
+                bot.answer_callback_query(call.id, t('notifications.not_authorized', 'fr'))
                 return
 
             # Update Preference
@@ -294,11 +294,11 @@ def register_bot_handlers(app_context_provider):
             # Refresh Keyboard
             markup = InlineKeyboardMarkup()
             options = [
-                ('notify_entry', '🛬 Entrées Zone'),
-                ('notify_exit', '🛫 Sorties Zone'),
-                ('notify_alerts', '🚨 Alertes/Urgences'),
-                ('notify_billing', '💰 Facturation'),
-                ('notify_daily_report', '📊 Rapport 24h')
+                ('notify_entry', t('notifications.setting_entry', 'fr')),
+                ('notify_exit', t('notifications.setting_exit', 'fr')),
+                ('notify_alerts', t('notifications.setting_alerts', 'fr')),
+                ('notify_billing', t('notifications.setting_billing', 'fr')),
+                ('notify_daily_report', t('notifications.setting_daily', 'fr'))
             ]
 
             for k, label in options:
@@ -307,7 +307,7 @@ def register_bot_handlers(app_context_provider):
                 markup.add(InlineKeyboardButton(f"{label} {status_icon}", callback_data=f"toggle:{k}"))
 
             bot.edit_message_reply_markup(chat_id=chat_id, message_id=call.message.message_id, reply_markup=markup)
-            bot.answer_callback_query(call.id, f"Mis à jour : {key}")
+            bot.answer_callback_query(call.id, t('notifications.updated_key', 'fr').format(key=key))
 
 def start_polling(app_context_provider):
     """

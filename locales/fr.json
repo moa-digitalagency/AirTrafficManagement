@@ -287,5 +287,48 @@
         "squawk_7700": "Urgence Générale (7700)",
         "squawk_7600": "Panne Radio (7600)",
         "squawk_7500": "Détournement (7500)"
+    },
+
+    "notifications": {
+        "entry_title": "🛬 *Entrée Espace Aérien*",
+        "entry_flight": "Vol",
+        "entry_route": "Trajet",
+        "entry_type": "Type",
+        "exit_title": "🛫 *Sortie de Zone*",
+        "exit_dist": "Dist",
+        "exit_dur": "Durée",
+        "exit_alt": "Exit Alt",
+        "billing_title": "💰 *Facture Générée*",
+        "billing_ref": "Ref",
+        "billing_client": "Client",
+        "billing_amount": "Montant",
+        "billing_type": "Type",
+        "alert_title_fmt": "🚨 *ALERTE: {title}*",
+        "security_title": "🔒 **Sécurité Renforcée**",
+        "pending_msg": "Votre demande est en attente. Pour finaliser l'activation, communiquez le code suivant à votre administrateur (par téléphone ou email) :\n\n**{code_formatted}**\n\n*Ce code est unique à votre demande.*",
+        "welcome_msg": "✅ Bienvenue, {name}!\n\nUtilisez /settings pour configurer vos notifications.",
+        "access_denied": "⛔ Accès refusé.",
+        "not_authorized": "⛔ Non autorisé.",
+        "settings_title": "⚙️ *Paramètres de Notification*\nCliquez pour activer/désactiver :",
+        "setting_entry": "🛬 Entrées Zone",
+        "setting_exit": "🛫 Sorties Zone",
+        "setting_alerts": "🚨 Alertes/Urgences",
+        "setting_billing": "💰 Facturation",
+        "setting_daily": "📊 Rapport 24h",
+        "updated_key": "Mis à jour : {key}",
+        "new_request_title": "Nouvelle demande Telegram",
+        "new_request_msg": "Utilisateur {username} ({first_name}) demande l'accès au Bot.",
+        "overflight_completed_title": "Survol terminé: {callsign}",
+        "overflight_completed_msg": "Le vol {callsign} a quitté l'espace aérien. Prêt à facturer.",
+        "landing_title": "Atterrissage: {callsign}",
+        "landing_msg": "Atterrissage détecté à {airport}. Facturation atterrissage applicable.",
+        "parking_completed_title": "Parking terminé: {callsign}",
+        "parking_completed_msg": "Parking terminé à {airport}. Durée: {duration} min."
+    },
+
+    "system_notes": {
+        "overflight_fmt": "Survol: {session_id}, Distance: {distance} km, MTOW: {mtow} tonnes",
+        "flight_fmt": "Vol: {callsign}, Date: {date}",
+        "auto_invoice_fmt": "Facture automatique pour vol {callsign}"
     }
 }
