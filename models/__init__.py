@@ -7,7 +7,7 @@
  */
 """
 from .base import db
-from .user import User
+from .user import User, Role, Permission
 from .aircraft import Aircraft
 from .airport import Airport
 from .airline import Airline
