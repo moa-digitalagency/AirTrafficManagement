@@ -25,6 +25,7 @@ from datetime import datetime
 from config.settings import Config
 from models import db, User
 from services.translation_service import t
+from security.startup import check_production_safety, validate_admin_credentials, seed_super_admin
 
 socketio = SocketIO()
 login_manager = LoginManager()
@@ -32,6 +33,10 @@ csrf = CSRFProtect()
 
 
 def create_app(config_class=Config):
+    # Perform startup security checks
+    check_production_safety()
+    validate_admin_credentials()
+
     app = Flask(__name__,
                 template_folder='templates',
                 static_folder='static')
@@ -149,6 +154,9 @@ def create_app(config_class=Config):
         db.session.rollback()
         return render_template('errors/500.html'), 500
     
+    # Seed Super Admin if needed
+    seed_super_admin(app)
+
     return app
 
 
