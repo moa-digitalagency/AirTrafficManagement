@@ -22,7 +22,7 @@ from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 from datetime import datetime
 
-from config.settings import Config
+from config.settings import config
 from models import db, User
 from services.translation_service import t
 from security.startup import check_production_safety, validate_admin_credentials, seed_super_admin
@@ -32,7 +32,7 @@ login_manager = LoginManager()
 csrf = CSRFProtect()
 
 
-def create_app(config_class=Config):
+def create_app(config_name='default'):
     # Perform startup security checks
     check_production_safety()
     validate_admin_credentials()
@@ -41,7 +41,9 @@ def create_app(config_class=Config):
                 template_folder='templates',
                 static_folder='static')
     
-    app.config.from_object(config_class)
+    # Load config from the config dictionary using environment variable or default
+    env_config = os.environ.get('FLASK_CONFIG', config_name)
+    app.config.from_object(config[env_config])
     
     db.init_app(app)
     socketio.init_app(app, cors_allowed_origins="*", async_mode='eventlet')
@@ -189,7 +191,7 @@ def broadcast_flight_update(flights_data):
     socketio.emit('flight_update', {'flights': flights_data}, room='radar_all')
 
 
-app = create_app()
+app = create_app(os.environ.get('FLASK_CONFIG', 'default'))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -20,6 +20,9 @@ import sys
 from datetime import datetime, date, timedelta
 import random
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
