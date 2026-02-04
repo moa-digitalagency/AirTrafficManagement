@@ -117,7 +117,59 @@
         "immersive_mode": "Immersion",
         "cat": "Cat",
         "squawk": "Squawk",
-        "alt_abbr": "Alt"
+        "alt_abbr": "Alt",
+        "session": "Session",
+        "overflights": {
+            "page_title": "Survols & Geofencing",
+            "subtitle": "Détection des survols de l'espace aérien RDC",
+            "active": "Survols Actifs",
+            "completed_today": "Complétés Aujourd'hui",
+            "total_distance": "Distance Totale",
+            "unbilled": "Non Facturés",
+            "realtime_trajectories": "Trajectoires en temps réel",
+            "no_active": "Aucun survol actif",
+            "recent_completed": "Survols Récents (Complétés)",
+            "no_recent": "Aucun survol récent",
+            "confirm_invoice": "Générer une facture pour ce survol?",
+            "auto_appear": "Les survols apparaîtront ici automatiquement"
+        },
+        "terminal": {
+            "page_title": "Radar Aéroportuaire",
+            "subtitle": "Gestion des mouvements au sol - Cycle Atterrissage",
+            "approaching": "En Approche",
+            "en_route": "En Route",
+            "on_ground": "Au Sol",
+            "total_inbound": "Total Inbound",
+            "active_airports": "Aéroports Actifs",
+            "queue_title": "File d'Attente (Inbound Queue)",
+            "queue_empty": "File d'attente vide - Aucune arrivée prévue",
+            "ground_title": "Aéronefs au Sol (Parking & Stationnement)",
+            "ground_empty": "Aucun aéronef au sol",
+            "cycle_title": "Cycle Atterrissage",
+            "step1": "1. Approche",
+            "step1_desc": "Descente vers l'aéroport",
+            "step2": "2. Touchdown",
+            "step2_desc": "Contact piste",
+            "step3": "3. Taxi",
+            "step3_desc": "Roulage vers parking",
+            "step4": "4. Parking",
+            "step4_desc": "Stationnement (1h gratuit)",
+            "airports_rdc": "Aéroports RDC",
+            "daily_summary": "Résumé du Jour",
+            "free": "Gratuit",
+            "remaining": "restant",
+            "confirm_landing": "Confirmer l'atterrissage de ce vol?",
+            "confirm_departure": "Enregistrer le départ de cet aéronef?",
+            "parking_hours": "Heures stationnement",
+            "landings": "Atterrissages",
+            "departures_today": "Départs aujourd'hui",
+            "parking_duration": "Durée Parking",
+            "billable": "Facturable"
+        },
+        "tooltip": {
+            "entry": "Entrée",
+            "exit": "Sortie"
+        }
     },
     "flights": {
         "callsign": "Indicatif",
@@ -207,7 +259,8 @@
         "confirm_payment": "Confirmer le paiement",
         "upload_proof_instruction": "Veuillez télécharger la preuve de paiement pour valider cette facture.",
         "confirm": "Confirmer",
-        "no_billable_items": "Aucun élément facturable trouvé."
+        "no_billable_items": "Aucun élément facturable trouvé.",
+        "generate_plural": "Générer Factures"
     },
     "admin": {
         "users": "Utilisateurs",
@@ -241,7 +294,47 @@
         "settings_updated": "{count} paramètre(s) mis à jour.",
         "no_changes": "Aucun changement détecté.",
         "lang_file_uploaded": "Fichier de langue {filename} téléchargé.",
-        "lang_toggled": "Langue {lang} {status}."
+        "lang_toggled": "Langue {lang} {status}.",
+        "api_keys": {
+            "title": "Gestion des Clés API",
+            "page_title": "Gestion des Clés API Externe",
+            "subtitle": "Gérez les accès aux systèmes tiers",
+            "active_keys": "Clés API Actives",
+            "generate_key": "Générer une clé",
+            "name": "Nom",
+            "key_masked": "Clé (Masquée)",
+            "rate_limit": "Rate Limit",
+            "last_used": "Dernier usage",
+            "created_at": "Créé le",
+            "never_used": "Jamais",
+            "suspend": "Suspendre",
+            "reactivate": "Réactiver",
+            "revoke": "Révoquer",
+            "status_active": "Actif",
+            "status_suspended": "Suspendu",
+            "status_revoked": "Révoqué",
+            "modal_title": "Nouvelle Clé API",
+            "label_name": "Nom du système / client",
+            "label_rate_limit": "Rate Limit (req/min)",
+            "success_msg": "Clé générée ! Copiez-la maintenant.",
+            "copy": "Copier",
+            "close": "Fermer",
+            "generate": "Générer",
+            "generating": "Génération...",
+            "name_required": "Nom requis",
+            "confirm_action": "Confirmer l'action : "
+        },
+        "airspace_map": {
+            "page_title": "Configuration Espace Aérien",
+            "subtitle": "Définition de la zone de surveillance (RDC)",
+            "map_title": "Carte Interactive",
+            "instructions": "Utilisez les outils de dessin pour définir les limites de l'espace aérien. Double-cliquez pour terminer un polygone.",
+            "draw_error": "<strong>Erreur:</strong> Les limites ne peuvent pas se croiser!",
+            "draw_empty": "Veuillez dessiner une zone avant de sauvegarder.",
+            "multiple_zones": "Attention: Plusieurs zones détectées. Seule la première ou une fusion sera sauvegardée. Continuer?",
+            "save_success": "Configuration sauvegardée avec succès!",
+            "save_error": "Erreur lors de la sauvegarde: "
+        }
     },
     "common": {
         "save": "Enregistrer",
@@ -249,6 +342,7 @@
         "delete": "Supprimer",
         "edit": "Modifier",
         "view": "Voir",
+        "back": "Retour",
         "enabled": "Activé",
         "disabled": "Désactivé",
         "search": "Rechercher",
@@ -262,7 +356,22 @@
         "loading": "Chargement",
         "showing": "Affichage de",
         "of": "sur",
-        "page": "Page"
+        "page": "Page",
+        "duration": "Durée",
+        "distance": "Distance",
+        "seq": "Seq",
+        "processing": "Traitement...",
+        "calculating": "Calcul...",
+        "view_history": "Voir l'historique",
+        "confirmation": "Confirmation",
+        "are_you_sure": "Êtes-vous sûr ?",
+        "confirm": "Confirmer",
+        "error": {
+            "connection": "Erreur de connexion",
+            "unknown": "Erreur inconnue",
+            "generic": "Erreur"
+        },
+        "success": "Succès"
     },
     "status": {
         "scheduled": "Programmé",
@@ -317,7 +426,12 @@
         "landing_title": "Atterrissage: {callsign}",
         "landing_msg": "Atterrissage détecté à {airport}. Facturation atterrissage applicable.",
         "parking_completed_title": "Parking terminé: {callsign}",
-        "parking_completed_msg": "Parking terminé à {airport}. Durée: {duration} min."
+        "parking_completed_msg": "Parking terminé à {airport}. Durée: {duration} min.",
+        "empty": "Aucune notification",
+        "mark_read": "Marquer comme lu",
+        "mark_all_read": "Tout marquer comme lu",
+        "loading_error": "Erreur de chargement",
+        "title": "Notifications"
     },
     "system_notes": {
         "overflight_fmt": "Survol: {session_id}, Distance: {distance} km, MTOW: {mtow} tonnes",
@@ -380,5 +494,30 @@
         "total": "TOTAL :",
         "bank_details": "Coordonnées Bancaires :",
         "generated_footer": "Généré le {date} par {user}"
+    },
+    "system": {
+        "status": {
+            "active": "Système : ACTIF",
+            "stopped": "Système : ARRÊT"
+        },
+        "modal": {
+            "stop_title": "Arrêter le système ?",
+            "stop_message": "Voulez-vous arrêter tout le système ? La surveillance, la facturation et le Bot seront suspendus.",
+            "start_title": "Démarrer le système ?",
+            "start_message": "Démarrer les services ATM-RDC ?"
+        }
+    },
+    "billing": {
+        "status": {
+            "billed": "Facturé",
+            "pending": "En attente"
+        },
+        "generated_success": "Facture générée avec succès!"
+    },
+    "errors": {
+        "500_title": "500 - Erreur Serveur",
+        "500_message": "Erreur Interne du Serveur",
+        "500_detail": "Une erreur inattendue s'est produite. Nos équipes ont été notifiées.",
+        "return_home": "Retour à l'accueil"
     }
 }

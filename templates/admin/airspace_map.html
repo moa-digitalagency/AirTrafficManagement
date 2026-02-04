@@ -8,9 +8,9 @@
 -->
 {% extends "base.html" %}
 
-{% block title %}Configuration Espace Aérien - ATM-RDC{% endblock %}
-{% block page_title %}Configuration Espace Aérien{% endblock %}
-{% block page_subtitle %}Définition de la zone de surveillance (RDC){% endblock %}
+{% block title %}{{ t('admin.airspace_map.page_title') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('admin.airspace_map.page_title') }}{% endblock %}
+{% block page_subtitle %}{{ t('admin.airspace_map.subtitle') }}{% endblock %}
 
 {% block head %}
 <!-- Leaflet CSS -->
@@ -26,20 +26,19 @@
         <div>
             <h3 class="font-semibold text-white">
                 <i class="fas fa-map-marked-alt mr-2 text-primary-400"></i>
-                Carte Interactive
+                {{ t('admin.airspace_map.map_title') }}
             </h3>
             <p class="text-sm text-gray-400 mt-1">
-                Utilisez les outils de dessin pour définir les limites de l'espace aérien.
-                Double-cliquez pour terminer un polygone.
+                {{ t('admin.airspace_map.instructions') }}
             </p>
         </div>
         <div class="flex gap-2">
             <a href="{{ url_for('admin.settings') }}" class="px-4 py-2 bg-dark-300 text-gray-300 hover:text-white rounded-lg transition-colors">
-                Retour
+                {{ t('common.back') }}
             </a>
             <button onclick="saveAirspace()" class="px-4 py-2 bg-primary-600 text-white hover:bg-primary-500 rounded-lg transition-colors flex items-center gap-2">
                 <i class="fas fa-save"></i>
-                Sauvegarder
+                {{ t('common.save') }}
             </button>
         </div>
     </div>
@@ -60,7 +59,11 @@
     window.adminAirspaceContext = {
         existingGeoJSON: {{ geojson | tojson | safe if geojson else 'null' }},
         saveUrl: "{{ url_for('admin.save_airspace') }}",
-        csrfToken: "{{ csrf_token() }}"
+        csrfToken: "{{ csrf_token() }}",
+        i18n: {
+            airspace_map: {{ t('admin.airspace_map') | tojson }},
+            common: {{ t('common') | tojson }}
+        }
     };
 </script>
 <script src="{{ url_for('static', filename='js/admin/airspace_map.js') }}"></script>

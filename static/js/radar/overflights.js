@@ -128,7 +128,7 @@
                         weight: 2,
                         fillOpacity: 0.9
                     });
-                    entryMarker.bindTooltip(`<b>Entrée: ${ovf.session_id}</b><br>Alt: FL${Math.round(ovf.entry_alt / 100)}`, {
+                    entryMarker.bindTooltip(`<b>${i18n.legend.entry}: ${ovf.session_id}</b><br>Alt: FL${Math.round(ovf.entry_alt / 100)}`, {
                         className: 'trajectory-tooltip'
                     });
                     entryMarker.addTo(markersLayer);
@@ -142,7 +142,7 @@
                         weight: 2,
                         fillOpacity: 0.9
                     });
-                    exitMarker.bindTooltip(`<b>Sortie: ${ovf.session_id}</b><br>Alt: FL${Math.round(ovf.exit_alt / 100)}`, {
+                    exitMarker.bindTooltip(`<b>${i18n.legend.exit}: ${ovf.session_id}</b><br>Alt: FL${Math.round(ovf.exit_alt / 100)}`, {
                         className: 'trajectory-tooltip'
                     });
                     exitMarker.addTo(markersLayer);
@@ -269,7 +269,7 @@
                     weight: 2,
                     fillOpacity: 0.9
                 });
-                entryMarker.bindPopup(`<b>Point d'entrée</b><br>Lat: ${data.entry_lat.toFixed(4)}<br>Lon: ${data.entry_lon.toFixed(4)}<br>Alt: FL${Math.round(data.entry_alt / 100)}`);
+                entryMarker.bindPopup(`<b>${i18n.legend.entry}</b><br>Lat: ${data.entry_lat.toFixed(4)}<br>Lon: ${data.entry_lon.toFixed(4)}<br>Alt: FL${Math.round(data.entry_alt / 100)}`);
                 entryMarker.addTo(markersLayer);
             }
 
@@ -281,7 +281,7 @@
                     weight: 2,
                     fillOpacity: 0.9
                 });
-                exitMarker.bindPopup(`<b>Point de sortie</b><br>Lat: ${data.exit_lat.toFixed(4)}<br>Lon: ${data.exit_lon.toFixed(4)}<br>Alt: FL${Math.round(data.exit_alt / 100)}`);
+                exitMarker.bindPopup(`<b>${i18n.legend.exit}</b><br>Lat: ${data.exit_lat.toFixed(4)}<br>Lon: ${data.exit_lon.toFixed(4)}<br>Alt: FL${Math.round(data.exit_alt / 100)}`);
                 exitMarker.addTo(markersLayer);
             }
 
@@ -329,7 +329,7 @@
     }
 
     async function generateInvoice(overflightId) {
-        if (!confirm('Générer une facture pour ce survol?')) return;
+        if (!confirm(i18n.overflights.confirm_invoice)) return;
 
         try {
             const response = await fetch(`/invoices/generate/overflight/${overflightId}`, {
@@ -340,14 +340,17 @@
             const data = await response.json();
 
             if (data.success) {
-                alert(`Facture ${data.invoice_number} générée avec succès!`);
+                alert(i18n.billing.generated_success + ' (' + data.invoice_number + ')');
                 window.location.reload();
             } else {
-                alert('Erreur: ' + (data.error || 'Impossible de générer la facture'));
+                const unknown = i18n.common.error.unknown || 'Unknown error';
+                const prefix = i18n.common.error.generic || 'Error';
+                alert(prefix + ': ' + (data.error || unknown));
             }
         } catch (e) {
             console.error('Error generating invoice:', e);
-            alert('Erreur lors de la génération de la facture');
+            const unknown = i18n.common.error.unknown || 'Unknown error';
+            alert(unknown);
         }
     }
 

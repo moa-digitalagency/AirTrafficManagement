@@ -8,9 +8,9 @@
 -->
 {% extends "base.html" %}
 
-{% block title %}Survols - ATM-RDC{% endblock %}
-{% block page_title %}Survols & Geofencing{% endblock %}
-{% block page_subtitle %}Détection des survols de l'espace aérien RDC{% endblock %}
+{% block title %}{{ t('nav.overflights') }} - {{ t('app_name') }}{% endblock %}
+{% block page_title %}{{ t('radar.overflights.page_title') }}{% endblock %}
+{% block page_subtitle %}{{ t('radar.overflights.subtitle') }}{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/radar/overflights.css') }}">
@@ -22,7 +22,7 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Survols Actifs</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('radar.overflights.active') }}</p>
                 <p class="text-3xl font-bold text-white" id="active-count" data-testid="text-active-count">{{ active_overflights|length }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
@@ -34,7 +34,7 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Complétés Aujourd'hui</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('radar.overflights.completed_today') }}</p>
                 <p class="text-3xl font-bold text-white" data-testid="text-completed-today">{{ completed_overflights|length }}</p>
             </div>
             <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -46,7 +46,7 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Distance Totale</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('radar.overflights.total_distance') }}</p>
                 <p class="text-3xl font-bold text-white" data-testid="text-total-distance">
                     {{ (completed_overflights|map(attribute='distance_km')|select('number')|sum)|round(0)|int }} km
                 </p>
@@ -60,7 +60,7 @@
     <div class="bg-dark-400 rounded-xl border border-dark-100 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-gray-400 text-sm mb-1">Non Facturés</p>
+                <p class="text-gray-400 text-sm mb-1">{{ t('radar.overflights.unbilled') }}</p>
                 <p class="text-3xl font-bold text-yellow-400" data-testid="text-unbilled">
                     {{ completed_overflights|rejectattr('is_billed')|list|length }}
                 </p>
@@ -79,7 +79,7 @@
         <div class="p-4 border-b border-dark-100 flex items-center justify-between">
             <h3 class="font-semibold text-white">
                 <i class="fas fa-map-marked-alt mr-2 text-primary-400"></i>
-                Trajectoires en temps réel
+                {{ t('radar.overflights.realtime_trajectories') }}
             </h3>
             <div class="flex items-center gap-3">
                 <button onclick="toggleFullscreen()" class="px-2 py-1 bg-dark-300 text-gray-300 hover:text-white rounded text-xs transition-colors" id="btn-fullscreen">
@@ -89,15 +89,15 @@
             <div class="flex items-center gap-3 text-sm">
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 bg-green-400 rounded-full"></span>
-                    <span class="text-gray-400">Entrée</span>
+                    <span class="text-gray-400">{{ t('radar.legend.entry') }}</span>
                 </span>
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 bg-red-400 rounded-full"></span>
-                    <span class="text-gray-400">Sortie</span>
+                    <span class="text-gray-400">{{ t('radar.legend.exit') }}</span>
                 </span>
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 bg-blue-400 rounded-full"></span>
-                    <span class="text-gray-400">Position</span>
+                    <span class="text-gray-400">{{ t('radar.legend.position') }}</span>
                 </span>
             </div>
         </div>
@@ -109,7 +109,7 @@
         <div class="p-4 border-b border-dark-100 flex items-center justify-between">
             <h3 class="font-semibold text-white">
                 <i class="fas fa-plane mr-2 text-green-400"></i>
-                Survols Actifs
+                {{ t('radar.overflights.active') }}
             </h3>
             <span class="w-2 h-2 bg-green-400 rounded-full status-dot"></span>
         </div>
@@ -122,26 +122,26 @@
                     <span class="font-medium text-white">{{ ovf.session_id }}</span>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
                         <span class="w-1.5 h-1.5 bg-green-400 rounded-full status-dot"></span>
-                        Actif
+                        Active
                     </span>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <p class="text-gray-400 text-xs">Point d'entrée</p>
+                        <p class="text-gray-400 text-xs">{{ t('radar.tooltip.entry') }}</p>
                         <p class="text-white">{{ "%.4f"|format(ovf.entry_lat) }}, {{ "%.4f"|format(ovf.entry_lon) }}</p>
                     </div>
                     <div>
-                        <p class="text-gray-400 text-xs">Altitude</p>
+                        <p class="text-gray-400 text-xs">{{ t('flights.altitude') }}</p>
                         <p class="text-white">FL{{ ((ovf.entry_alt or 0) / 100)|int }}</p>
                     </div>
                     <div>
-                        <p class="text-gray-400 text-xs">Heure d'entrée</p>
+                        <p class="text-gray-400 text-xs">{{ t('flights.time') }}</p>
                         <p class="text-white">{{ ovf.entry_time.strftime('%H:%M:%S') if ovf.entry_time else '--:--:--' }}</p>
                     </div>
                     <div>
-                        <p class="text-gray-400 text-xs">Durée</p>
-                        <p class="text-green-400 font-medium" id="duration-{{ ovf.id }}">Calcul...</p>
+                        <p class="text-gray-400 text-xs">{{ t('common.duration') }}</p>
+                        <p class="text-green-400 font-medium" id="duration-{{ ovf.id }}">{{ t('common.calculating') }}</p>
                     </div>
                 </div>
                 
@@ -155,8 +155,8 @@
             {% else %}
             <div class="text-center py-8 text-gray-400">
                 <i class="fas fa-plane-slash text-4xl mb-3 opacity-50"></i>
-                <p>Aucun survol actif</p>
-                <p class="text-xs mt-2">Les survols apparaîtront ici automatiquement</p>
+                <p>{{ t('radar.overflights.no_active') }}</p>
+                <p class="text-xs mt-2">{{ t('radar.overflights.auto_appear') }}</p>
             </div>
             {% endfor %}
         </div>
@@ -168,14 +168,14 @@
     <div class="p-4 border-b border-dark-100 flex items-center justify-between">
         <h3 class="font-semibold text-white">
             <i class="fas fa-history mr-2 text-blue-400"></i>
-            Survols Récents (Complétés)
+            {{ t('radar.overflights.recent_completed') }}
         </h3>
         <div class="flex items-center gap-4">
             <a href="{{ url_for('invoices.index') }}" class="text-sm text-yellow-400 hover:text-yellow-300" data-testid="link-generate-invoices">
-                <i class="fas fa-file-invoice-dollar mr-1"></i> Générer Factures
+                <i class="fas fa-file-invoice-dollar mr-1"></i> {{ t('invoices.generate_plural') }}
             </a>
             <a href="{{ url_for('flights.history') }}" class="text-sm text-primary-400 hover:text-primary-300" data-testid="link-history">
-                Voir l'historique <i class="fas fa-arrow-right ml-1"></i>
+                {{ t('common.view_history') }} <i class="fas fa-arrow-right ml-1"></i>
             </a>
         </div>
     </div>
@@ -184,14 +184,14 @@
         <table class="w-full">
             <thead class="bg-dark-300">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Session</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Vol</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Entrée</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Sortie</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Durée</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Distance</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Statut</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('radar.session') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('flights.flight') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('radar.legend.entry') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('radar.legend.exit') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('common.duration') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('common.distance') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('flights.status') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">{{ t('flights.actions') }}</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-dark-100">
@@ -232,21 +232,21 @@
                     <td class="px-4 py-3">
                         {% if ovf.is_billed %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                            <i class="fas fa-check-circle mr-1"></i> Facturé
+                            <i class="fas fa-check-circle mr-1"></i> {{ t('billing.status.billed') }}
                         </span>
                         {% else %}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">
-                            <i class="fas fa-clock mr-1"></i> En attente
+                            <i class="fas fa-clock mr-1"></i> {{ t('billing.status.pending') }}
                         </span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
-                            <button onclick="showTrajectory('{{ ovf.id }}')" class="p-1.5 text-gray-400 hover:text-white rounded transition-colors" title="Voir trajectoire" data-testid="btn-trajectory-{{ ovf.id }}">
+                            <button onclick="showTrajectory('{{ ovf.id }}')" class="p-1.5 text-gray-400 hover:text-white rounded transition-colors" title="{{ t('common.view') }}" data-testid="btn-trajectory-{{ ovf.id }}">
                                 <i class="fas fa-route"></i>
                             </button>
                             {% if not ovf.is_billed %}
-                            <button onclick="generateInvoice('{{ ovf.id }}')" class="p-1.5 text-yellow-400 hover:text-yellow-300 rounded transition-colors" title="Générer facture" data-testid="btn-invoice-{{ ovf.id }}">
+                            <button onclick="generateInvoice('{{ ovf.id }}')" class="p-1.5 text-yellow-400 hover:text-yellow-300 rounded transition-colors" title="{{ t('invoices.create') }}" data-testid="btn-invoice-{{ ovf.id }}">
                                 <i class="fas fa-file-invoice-dollar"></i>
                             </button>
                             {% endif %}
@@ -257,7 +257,7 @@
                 <tr>
                     <td colspan="8" class="px-4 py-8 text-center text-gray-400">
                         <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
-                        <p>Aucun survol récent</p>
+                        <p>{{ t('radar.overflights.no_recent') }}</p>
                     </td>
                 </tr>
                 {% endfor %}
@@ -278,7 +278,13 @@
         },
         i18n: {
             fullscreen: "{{ t('radar.fullscreen') }}",
-            exit_fullscreen: "{{ t('radar.exit_fullscreen') }}"
+            exit_fullscreen: "{{ t('radar.exit_fullscreen') }}",
+            overflights: {{ t('radar.overflights') | tojson }},
+            legend: {{ t('radar.legend') | tojson }},
+            tooltip: {{ t('radar.tooltip') | tojson }},
+            common: {{ t('common') | tojson }},
+            billing: {{ t('billing') | tojson }},
+            invoices: {{ t('invoices') | tojson }}
         }
     };
 </script>
