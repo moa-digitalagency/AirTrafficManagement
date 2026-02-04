@@ -16,7 +16,7 @@ from threading import Thread
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from models import db, TelegramSubscriber
+from models import db, TelegramSubscriber, SystemConfig
 from services.notification_service import NotificationService
 from services.translation_service import t
 
@@ -53,6 +53,11 @@ class TelegramService:
     def send_message(chat_id, text, parse_mode='Markdown'):
         if not TelegramService.is_enabled():
             logger.warning("Telegram Bot Token not configured. Cannot send message.")
+            return False
+
+        # Check system status
+        config = SystemConfig.query.filter_by(key='system_active').first()
+        if config and config.get_typed_value() is False:
             return False
 
         try:
