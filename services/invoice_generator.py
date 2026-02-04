@@ -474,7 +474,7 @@ def trigger_auto_invoice(flight_id):
         total_amount=amounts['total'],
         status='draft',
         due_date=datetime.now().date(),
-        notes=f"Facture automatique pour vol {flight.callsign}",
+        notes=t('system_notes.auto_invoice_fmt', 'fr').format(callsign=flight.callsign),
         created_by=None # System
     )
 

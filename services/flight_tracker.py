@@ -24,6 +24,7 @@ from models import db, Flight, FlightPosition, Aircraft, Airport, Overflight, La
 from services.api_client import fetch_external_flight_data, openweathermap, aviationweather
 from services.invoice_generator import trigger_auto_invoice
 from services.telegram_service import TelegramService
+from services.translation_service import t
 
 CACHED_RDC_BOUNDARY_GEOM = None
 
@@ -401,8 +402,8 @@ def check_overflight_exit(flight_id, lat, lon, alt):
     callsign = flight.callsign if flight else "Unknown"
     NotificationService.notify_billing(
         type='overflight_completed',
-        title=f"Survol terminé: {callsign}",
-        message=f"Le vol {callsign} a quitté l'espace aérien. Prêt à facturer.",
+        title=t('notifications.overflight_completed_title', 'fr').format(callsign=callsign),
+        message=t('notifications.overflight_completed_msg', 'fr').format(callsign=callsign),
         link=f"/radar/overflights"
     )
     
@@ -551,8 +552,8 @@ def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, s
                 from services.notification_service import NotificationService
                 NotificationService.notify_billing(
                     type='flight_landed',
-                    title=f"Atterrissage: {landing.callsign}",
-                    message=f"Atterrissage détecté à {landing.airport_icao}. Facturation atterrissage applicable.",
+                    title=t('notifications.landing_title', 'fr').format(callsign=landing.callsign),
+                    message=t('notifications.landing_msg', 'fr').format(airport=landing.airport_icao),
                     link=f"/radar/terminal"
                 )
                 return landing
@@ -588,8 +589,8 @@ def check_landing_events(flight_id, lat, lon, alt, speed, active_landing=None, s
                 from services.notification_service import NotificationService
                 NotificationService.notify_billing(
                     type='parking_completed',
-                    title=f"Parking terminé: {landing.callsign}",
-                    message=f"Parking terminé à {landing.airport_icao}. Durée: {int(landing.parking_duration_minutes or 0)} min.",
+                    title=t('notifications.parking_completed_title', 'fr').format(callsign=landing.callsign),
+                    message=t('notifications.parking_completed_msg', 'fr').format(airport=landing.airport_icao, duration=int(landing.parking_duration_minutes or 0)),
                     link=f"/radar/terminal"
                 )
 

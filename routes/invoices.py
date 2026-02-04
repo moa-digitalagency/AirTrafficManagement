@@ -432,7 +432,7 @@ def generate_overflight_invoice(overflight_id):
         total_amount=total,
         status='draft',
         due_date=date.today(),
-        notes=f"Survol: {ovf.session_id}, Distance: {distance_km:.1f} km, MTOW: {mtow} tonnes",
+        notes=t('system_notes.overflight_fmt', 'fr').format(session_id=ovf.session_id, distance=f"{distance_km:.1f}", mtow=mtow),
         created_by=current_user.id
     )
     
@@ -520,7 +520,7 @@ def generate_flight_invoice(flight_id):
         total_amount=amounts['total'],
         status='draft',
         due_date=date.today(),
-        notes=f"Vol: {flight.callsign}, Date: {flight.flight_date}",
+        notes=t('system_notes.flight_fmt', 'fr').format(callsign=flight.callsign, date=flight.flight_date),
         created_by=current_user.id
     )
 
