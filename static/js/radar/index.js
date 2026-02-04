@@ -12,24 +12,24 @@
         ft = ft || 0;
         if (unitSettings.altitude === 'm') {
             const m = Math.round(ft * 0.3048);
-            if (short) return `${Math.round(m / 100) / 10}km`; // e.g. 10.5km
-            return `${m.toLocaleString()} m`;
+            if (short) return `${Math.round(m / 100) / 10}${i18n.units.km}`; // e.g. 10.5km
+            return `${m.toLocaleString()} ${i18n.units.m}`;
         }
         // Imperial (ft)
-        if (short) return `FL${Math.round(ft / 100)}`;
-        return `${Math.round(ft).toLocaleString()} ft`;
+        if (short) return `${i18n.units.fl}${Math.round(ft / 100)}`;
+        return `${Math.round(ft).toLocaleString()} ${i18n.units.ft}`;
     }
 
     function formatSpeed(kts) {
         kts = kts || 0;
         if (unitSettings.speed === 'km/h') {
-            return `${Math.round(kts * 1.852)} km/h`;
+            return `${Math.round(kts * 1.852)} ${i18n.units.kmh}`;
         }
         if (unitSettings.speed === 'mach') {
             // Approx mach at standard altitude, very rough
-            return `M${(kts / 661.47).toFixed(2)}`;
+            return `${i18n.units.mach}${(kts / 661.47).toFixed(2)}`;
         }
-        return `${Math.round(kts)} kts`;
+        return `${Math.round(kts)} ${i18n.units.kts}`;
     }
 
     // Aircraft SVGs

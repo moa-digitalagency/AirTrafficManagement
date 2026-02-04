@@ -95,7 +95,7 @@ def calculate_overflight_cost(ovf):
     """
     # Check exemption
     if ovf.flight and ovf.flight.airline and ovf.flight.airline.exempt_overflight_fees:
-        return 0.0, "Exempted", "0.00 USD"
+        return 0.0, t('invoice_items.exempted'), "0.00 USD"
 
     mode = get_billing_mode()
 
@@ -103,22 +103,22 @@ def calculate_overflight_cost(ovf):
         rate = get_tariff('SURVOL_MINUTE')
         qty = ovf.duration_minutes or 0
         cost = qty * rate
-        desc = f"{qty} min"
-        unit_desc = f"{rate:.2f} USD/min"
+        desc = t('invoice_items.minutes').format(qty=qty)
+        unit_desc = t('invoice_items.unit_min').format(rate=f"{rate:.2f}")
     elif mode == 'HYBRID':
         rate_time = get_tariff('SURVOL_HYBRID_TIME')
         rate_dist = get_tariff('SURVOL_HYBRID_DIST')
         qty_time = ovf.duration_minutes or 0
         qty_dist = ovf.distance_km or 0
         cost = (qty_time * rate_time) + (qty_dist * rate_dist)
-        desc = f"{qty_time} min / {qty_dist:.1f} km"
-        unit_desc = f"Hyb (T:{rate_time:.2f} + D:{rate_dist:.2f})"
+        desc = t('invoice_items.hybrid_desc').format(time=qty_time, dist=f"{qty_dist:.1f}")
+        unit_desc = t('invoice_items.unit_hybrid').format(time=f"{rate_time:.2f}", dist=f"{rate_dist:.2f}")
     else: # DISTANCE
         rate = get_tariff('SURVOL_KM')
         qty = ovf.distance_km or 0
         cost = qty * rate
-        desc = f"{qty:.1f} km"
-        unit_desc = f"{rate:.2f} USD/km"
+        desc = t('invoice_items.km').format(qty=f"{qty:.1f}")
+        unit_desc = t('invoice_items.unit_km').format(rate=f"{rate:.2f}")
 
     return cost, desc, unit_desc
 
@@ -371,12 +371,12 @@ def generate_invoice_pdf(invoice, generated_by_user=None):
          content.append(Paragraph(footer_banks.replace('\n', '<br/>'), footer_style))
          content.append(Spacer(1, 0.2*cm))
 
-    content.append(Paragraph("Régie des Voies Aériennes - RDC", footer_style))
+    content.append(Paragraph(t('pdf.regie_name'), footer_style))
     if header_address:
          content.append(Paragraph(header_address.split('\n')[0], footer_style)) # Simplified address for footer
 
     phone = get_contact_phone()
-    content.append(Paragraph(f"Email: facturation@rva.cd | Tél: {phone}", footer_style))
+    content.append(Paragraph(f"{t('pdf.email_label')} facturation@rva.cd | {t('pdf.phone_label')} {phone}", footer_style))
     
     # Add Generation Metadata
     gen_time = datetime.now().strftime("%d/%m/%Y %H:%M")
