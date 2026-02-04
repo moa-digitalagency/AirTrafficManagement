@@ -263,7 +263,7 @@
         const inRdcOnly = document.querySelector('[data-status="in_rdc"]').checked;
 
         document.getElementById('altitude-value').textContent =
-            `${altMin.toLocaleString()} - ${altMax.toLocaleString()} ft`;
+            `${formatAltitude(altMin)} - ${formatAltitude(altMax)}`;
 
         filteredFlights = flights.filter(flight => {
             if (search && !matchesSearch(flight, search)) return false;

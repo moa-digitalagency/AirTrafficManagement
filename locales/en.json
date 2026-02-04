@@ -2,7 +2,6 @@
     "app_name": "ATM-RDC",
     "app_title": "Air Traffic Management",
     "app_subtitle": "Integrated Air Traffic Management System",
-
     "nav": {
         "dashboard": "Dashboard",
         "radar": "Radar",
@@ -22,7 +21,6 @@
         "main": "Main",
         "management": "Management"
     },
-
     "auth": {
         "login": "Login",
         "logout": "Logout",
@@ -42,7 +40,6 @@
         "invalid_credentials": "Invalid username or password.",
         "logout_success": "You have been logged out successfully."
     },
-
     "dashboard": {
         "title": "Dashboard",
         "active_flights": "Active Flights",
@@ -66,7 +63,6 @@
         "landings_today": "Landings Today",
         "quick_access": "Quick Access"
     },
-
     "radar": {
         "title": "Live Radar",
         "live_monitor": "Real-time Monitoring",
@@ -120,7 +116,6 @@
         "toggle_scan": "Scan",
         "immersive_mode": "Immersion"
     },
-
     "flights": {
         "callsign": "Callsign",
         "flight_number": "Flight No.",
@@ -148,7 +143,6 @@
         "no_flights": "No flights found",
         "check_filters": "Check your search filters"
     },
-
     "invoices": {
         "invoice": "Invoice",
         "create": "Create",
@@ -212,7 +206,6 @@
         "confirm": "Confirm",
         "no_billable_items": "No billable items found."
     },
-
     "admin": {
         "users": "Users",
         "airlines": "Airlines",
@@ -247,7 +240,6 @@
         "lang_file_uploaded": "Language file {filename} uploaded.",
         "lang_toggled": "Language {lang} {status}."
     },
-
     "common": {
         "enabled": "Enabled",
         "disabled": "Disabled",
@@ -269,7 +261,6 @@
         "of": "of",
         "page": "Page"
     },
-
     "status": {
         "scheduled": "Scheduled",
         "in_flight": "In Flight",
@@ -279,7 +270,6 @@
         "arrived": "Arrived",
         "cancelled": "Cancelled"
     },
-
     "alerts": {
         "emergency": "Emergency",
         "warning": "Warning",
@@ -288,7 +278,6 @@
         "squawk_7600": "Radio Failure (7600)",
         "squawk_7500": "Hijacking (7500)"
     },
-
     "notifications": {
         "entry_title": "🛬 *Airspace Entry*",
         "entry_flight": "Flight",
@@ -325,10 +314,66 @@
         "parking_completed_title": "Parking completed: {callsign}",
         "parking_completed_msg": "Parking completed at {airport}. Duration: {duration} min."
     },
-
     "system_notes": {
         "overflight_fmt": "Overflight: {session_id}, Distance: {distance} km, MTOW: {mtow} tonnes",
         "flight_fmt": "Flight: {callsign}, Date: {date}",
         "auto_invoice_fmt": "Automatic invoice for flight {callsign}"
+    },
+    "telegram": {
+        "page_title": "Notifications Bot - ATM-RDC",
+        "page_header": "Telegram Bot Management",
+        "page_subheader": "Configuration and Subscribers",
+        "global_config": "Global Configuration",
+        "test_connection": "Test Connection",
+        "pending_requests": "Pending Requests",
+        "table_user": "Telegram User",
+        "table_firstname": "First Name",
+        "table_date": "Request Date",
+        "table_actions": "Actions",
+        "action_approve": "Approve",
+        "action_reject": "Reject",
+        "no_pending": "No pending requests.",
+        "active_subscribers": "Active Subscribers",
+        "table_user_short": "User",
+        "table_approved_at": "Approved At",
+        "table_prefs": "Preferences",
+        "action_configure": "Configure",
+        "action_revoke": "Revoke",
+        "confirm_revoke": "Are you sure you want to revoke this user access?",
+        "no_active": "No active subscribers.",
+        "modal_config_title": "Configuration",
+        "pref_entry_title": "Zone Entries",
+        "pref_entry_desc": "Notify when a flight enters airspace",
+        "pref_exit_title": "Zone Exits",
+        "pref_exit_desc": "Notify when a flight exits zone (with report)",
+        "pref_billing_title": "Billing",
+        "pref_billing_desc": "Notify on every invoice generation",
+        "pref_alerts_title": "Alerts & Emergencies",
+        "pref_alerts_desc": "Security, SOS, technical failures",
+        "pref_daily_title": "Daily Report",
+        "pref_daily_desc": "Statistical summary at 23:59",
+        "modal_approve_title": "Security Validation",
+        "modal_approve_desc": "Please enter the 6-digit security code provided by the user.",
+        "otp_label": "OTP Code (6 digits)",
+        "action_validate": "Validate",
+        "validating": "Validating...",
+        "error_validation": "Validation Error",
+        "error_network": "Network Error"
+    },
+    "invoices_pdf": {
+        "client": "Client:",
+        "email": "Email:",
+        "details_header": "Service Details",
+        "col_desc": "Description",
+        "col_qty": "Quantity",
+        "col_unit": "Unit Price",
+        "col_total": "Total",
+        "item_overflight": "Overflight {session_id}",
+        "item_landing": "Landing {airport}",
+        "subtotal": "Subtotal:",
+        "tax": "VAT (16%):",
+        "total": "TOTAL:",
+        "bank_details": "Bank Details:",
+        "generated_footer": "Generated on {date} by {user}"
     }
 }

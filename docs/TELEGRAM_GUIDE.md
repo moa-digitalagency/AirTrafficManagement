@@ -27,8 +27,9 @@ Le système utilise un modèle de **sécurité par approbation manuelle** (Waiti
 ### Étape 2 : Validation Administrateur
 *   L'administrateur se connecte au **Tableau de Bord Admin** de l'application Web.
 *   Il accède à la section **Gestion Telegram** (`/admin/telegram`).
-*   Il voit la demande en statut **PENDING** avec le nom d'utilisateur et le code.
-*   Si le code correspond à celui fourni par l'utilisateur (par téléphone/email), l'admin clique sur **Approuver**.
+*   Il voit la demande en statut **PENDING** avec le nom d'utilisateur.
+*   Il clique sur le bouton **Approuver** et **saisit le code à 6 chiffres** fourni par l'utilisateur (par téléphone/email) dans la fenêtre de validation.
+*   Le système vérifie la correspondance du code OTP.
 
 ### Étape 3 : Activation
 *   Dès l'approbation, le bot envoie un message de bienvenue à l'utilisateur : *"✅ Bienvenue... Tapez /settings pour configurer..."*.

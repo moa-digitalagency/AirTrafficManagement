@@ -2,7 +2,6 @@
     "app_name": "ATM-RDC",
     "app_title": "Air Traffic Management",
     "app_subtitle": "Système Intégré de Gestion du Trafic Aérien",
-
     "nav": {
         "dashboard": "Tableau de Bord",
         "radar": "Radar",
@@ -22,7 +21,6 @@
         "main": "Principal",
         "management": "Gestion"
     },
-
     "auth": {
         "login": "Connexion",
         "logout": "Déconnexion",
@@ -42,7 +40,6 @@
         "invalid_credentials": "Nom d'utilisateur ou mot de passe incorrect.",
         "logout_success": "Vous avez été déconnecté avec succès."
     },
-
     "dashboard": {
         "title": "Tableau de Bord",
         "active_flights": "Vols Actifs",
@@ -66,7 +63,6 @@
         "landings_today": "Atterrissages Aujourd'hui",
         "quick_access": "Accès Rapide"
     },
-
     "radar": {
         "title": "Radar Live",
         "live_monitor": "Surveillance Temps Réel",
@@ -123,7 +119,6 @@
         "squawk": "Squawk",
         "alt_abbr": "Alt"
     },
-
     "flights": {
         "callsign": "Indicatif",
         "flight_number": "N° Vol",
@@ -151,7 +146,6 @@
         "no_flights": "Aucun vol trouvé",
         "check_filters": "Modifiez vos filtres de recherche"
     },
-
     "invoices": {
         "invoice": "Facture",
         "create": "Créer",
@@ -215,7 +209,6 @@
         "confirm": "Confirmer",
         "no_billable_items": "Aucun élément facturable trouvé."
     },
-
     "admin": {
         "users": "Utilisateurs",
         "airlines": "Compagnies",
@@ -250,7 +243,6 @@
         "lang_file_uploaded": "Fichier de langue {filename} téléchargé.",
         "lang_toggled": "Langue {lang} {status}."
     },
-
     "common": {
         "save": "Enregistrer",
         "cancel": "Annuler",
@@ -272,7 +264,6 @@
         "of": "sur",
         "page": "Page"
     },
-
     "status": {
         "scheduled": "Programmé",
         "in_flight": "En Vol",
@@ -282,7 +273,6 @@
         "arrived": "Arrivé",
         "cancelled": "Annulé"
     },
-
     "alerts": {
         "emergency": "Urgence",
         "warning": "Avertissement",
@@ -291,7 +281,6 @@
         "squawk_7600": "Panne Radio (7600)",
         "squawk_7500": "Détournement (7500)"
     },
-
     "notifications": {
         "entry_title": "🛬 *Entrée Espace Aérien*",
         "entry_flight": "Vol",
@@ -330,10 +319,66 @@
         "parking_completed_title": "Parking terminé: {callsign}",
         "parking_completed_msg": "Parking terminé à {airport}. Durée: {duration} min."
     },
-
     "system_notes": {
         "overflight_fmt": "Survol: {session_id}, Distance: {distance} km, MTOW: {mtow} tonnes",
         "flight_fmt": "Vol: {callsign}, Date: {date}",
         "auto_invoice_fmt": "Facture automatique pour vol {callsign}"
+    },
+    "telegram": {
+        "page_title": "Notifications Bot - ATM-RDC",
+        "page_header": "Gestion du Bot Telegram",
+        "page_subheader": "Configuration et abonnés",
+        "global_config": "Configuration Globale",
+        "test_connection": "Tester la connexion",
+        "pending_requests": "Demandes en attente",
+        "table_user": "Utilisateur Telegram",
+        "table_firstname": "Prénom",
+        "table_date": "Date demande",
+        "table_actions": "Actions",
+        "action_approve": "Approuver",
+        "action_reject": "Refuser",
+        "no_pending": "Aucune demande en attente.",
+        "active_subscribers": "Abonnés Actifs",
+        "table_user_short": "Utilisateur",
+        "table_approved_at": "Approuvé le",
+        "table_prefs": "Préférences",
+        "action_configure": "Configurer",
+        "action_revoke": "Révoquer",
+        "confirm_revoke": "Voulez-vous vraiment révoquer l'accès de cet utilisateur ?",
+        "no_active": "Aucun abonné actif.",
+        "modal_config_title": "Configuration",
+        "pref_entry_title": "Entrées de zone",
+        "pref_entry_desc": "Notif. quand un vol entre dans l'espace aérien",
+        "pref_exit_title": "Sorties de zone",
+        "pref_exit_desc": "Notif. quand un vol quitte la zone (avec rapport)",
+        "pref_billing_title": "Facturation",
+        "pref_billing_desc": "Notif. à chaque génération de facture",
+        "pref_alerts_title": "Alertes & Urgences",
+        "pref_alerts_desc": "Sécurité, SOS, pannes techniques",
+        "pref_daily_title": "Rapport Quotidien",
+        "pref_daily_desc": "Résumé statistique à 23h59",
+        "modal_approve_title": "Validation de Sécurité",
+        "modal_approve_desc": "Veuillez saisir le code de sécurité (6 chiffres) fourni par l'utilisateur.",
+        "otp_label": "Code OTP (6 chiffres)",
+        "action_validate": "Valider",
+        "validating": "Validation...",
+        "error_validation": "Erreur lors de la validation",
+        "error_network": "Erreur réseau"
+    },
+    "invoices_pdf": {
+        "client": "Client :",
+        "email": "Email :",
+        "details_header": "Détails des services",
+        "col_desc": "Description",
+        "col_qty": "Quantité",
+        "col_unit": "Prix Unitaire",
+        "col_total": "Total",
+        "item_overflight": "Survol {session_id}",
+        "item_landing": "Atterrissage {airport}",
+        "subtotal": "Sous-total :",
+        "tax": "TVA (16%) :",
+        "total": "TOTAL :",
+        "bank_details": "Coordonnées Bancaires :",
+        "generated_footer": "Généré le {date} par {user}"
     }
 }
