@@ -53,12 +53,9 @@
                         <td class="px-4 py-3 text-gray-300">{{ sub.first_name }}</td>
                         <td class="px-4 py-3 text-gray-400">{{ sub.request_date.strftime('%d/%m/%Y %H:%M') }}</td>
                         <td class="px-4 py-3 text-right space-x-2">
-                            <form action="{{ url_for('admin.telegram_approve', id=sub.id) }}" method="POST" class="inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded-lg transition-colors" title="Approuver">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                            </form>
+                            <button type="button" onclick="openApproveModal('{{ sub.id }}')" class="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-white rounded-lg transition-colors" title="Approuver">
+                                <i class="fas fa-check"></i>
+                            </button>
                             <form action="{{ url_for('admin.telegram_reject', id=sub.id) }}" method="POST" class="inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors" title="Refuser">
@@ -209,7 +206,102 @@
     </div>
 </div>
 
+<!-- Approve Modal -->
+<div id="approveModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-dark-400 rounded-xl border border-dark-100 p-6 w-full max-w-sm shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-2">Validation de Sécurité</h3>
+        <p class="text-gray-400 text-sm mb-4">Veuillez saisir le code de sécurité (6 chiffres) fourni par l'utilisateur.</p>
+
+        <form id="approveForm" onsubmit="submitApproval(event)">
+            <input type="hidden" id="approveUserId">
+            <div class="mb-6">
+                <label class="block text-xs font-medium text-gray-400 mb-2">Code OTP (6 chiffres)</label>
+                <input type="text" id="otpCode" class="w-full bg-dark-500 border border-dark-300 rounded-lg px-4 py-3 text-white font-mono text-center tracking-[0.5em] text-xl focus:ring-2 focus:ring-green-500 focus:outline-none placeholder-gray-600" placeholder="000000" maxlength="6" required autocomplete="off">
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeApproveModal()" class="px-4 py-2 text-gray-400 hover:text-white transition-colors">Annuler</button>
+                <button type="submit" id="btnConfirmApprove" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-check mr-2"></i> Valider
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    // --- Approve Modal Logic ---
+    function openApproveModal(userId) {
+        document.getElementById('approveUserId').value = userId;
+        document.getElementById('otpCode').value = '';
+        document.getElementById('btnConfirmApprove').disabled = true;
+        document.getElementById('approveModal').classList.remove('hidden');
+        setTimeout(() => document.getElementById('otpCode').focus(), 100);
+    }
+
+    function closeApproveModal() {
+        document.getElementById('approveModal').classList.add('hidden');
+    }
+
+    async function submitApproval(e) {
+        e.preventDefault();
+        const userId = document.getElementById('approveUserId').value;
+        const otpCode = document.getElementById('otpCode').value;
+        const btn = document.getElementById('btnConfirmApprove');
+        const originalText = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validation...';
+
+        try {
+            const response = await fetch('/api/telegram/approve', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ userId: userId, otpCode: otpCode })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert(data.error || 'Erreur lors de la validation');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Erreur réseau');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    document.getElementById('otpCode').addEventListener('input', function(e) {
+        // Allow only numbers
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 6) val = val.slice(0, 6);
+        e.target.value = val;
+
+        const btn = document.getElementById('btnConfirmApprove');
+        if (val.length === 6) {
+             btn.disabled = false;
+        } else {
+             btn.disabled = true;
+        }
+    });
+
+    // Close on click outside for Approve Modal
+    document.getElementById('approveModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeApproveModal();
+        }
+    });
+
+    // --- Config Modal Logic ---
     function openConfigModal(id, username, prefs) {
         const modal = document.getElementById('configModal');
         const form = document.getElementById('configForm');

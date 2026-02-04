@@ -12,7 +12,9 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 import json
 
-from models import db, Flight, Aircraft, Airport, Airline, Overflight, Landing, Invoice, Alert
+from models import db, Flight, Aircraft, Airport, Airline, Overflight, Landing, Invoice, Alert, TelegramSubscriber
+from services.telegram_service import TelegramService
+from utils.decorators import role_required
 
 api_bp = Blueprint('api', __name__)
 
@@ -218,3 +220,44 @@ def export_landings():
     
     landings = query.all()
     return jsonify([l.to_dict() for l in landings])
+
+
+@api_bp.route('/telegram/approve', methods=['POST'])
+@login_required
+@role_required(['superadmin'])
+def approve_telegram_subscriber():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid payload'}), 400
+
+    user_id = data.get('userId')
+    otp_code = data.get('otpCode')
+
+    if not user_id or not otp_code:
+        return jsonify({'error': 'Missing userId or otpCode'}), 400
+
+    sub = TelegramSubscriber.query.get(user_id)
+    if not sub:
+        return jsonify({'error': 'Subscriber not found'}), 404
+
+    if sub.status != 'PENDING':
+        return jsonify({'error': 'Request not pending'}), 400
+
+    # Clean OTP code (remove spaces if any)
+    otp_code_clean = str(otp_code).replace(' ', '')
+    stored_code_clean = str(sub.verification_code).replace(' ', '') if sub.verification_code else ''
+
+    if stored_code_clean != otp_code_clean:
+        return jsonify({'error': 'Code de vérification incorrect'}), 400
+
+    # Approve
+    sub.status = 'APPROVED'
+    sub.approval_date = datetime.utcnow()
+    sub.approved_by_id = current_user.id
+    sub.verification_code = None # Clear code
+    db.session.commit()
+
+    # Notify user
+    TelegramService.send_message(sub.telegram_chat_id, "✅ Votre accès est validé.\nTapez /settings pour configurer vos notifications.")
+
+    return jsonify({'success': True, 'message': 'Subscriber approved'})
