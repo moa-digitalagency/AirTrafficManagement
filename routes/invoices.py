@@ -13,6 +13,7 @@ import os
 import zipfile
 from io import BytesIO
 from werkzeug.utils import secure_filename
+from sqlalchemy.orm import joinedload
 
 from models import db, Invoice, Airline, Overflight, Landing, TariffConfig, AuditLog, Flight, Aircraft, SystemConfig
 from services.invoice_generator import generate_invoice_pdf, calculate_invoice_amounts, regenerate_invoice, generate_invoice_number
@@ -40,7 +41,8 @@ def index():
     flight_type = request.args.get('flight_type')
     aircraft_type = request.args.get('aircraft_type')
     
-    query = Invoice.query
+    # Eager load airline to prevent N+1 queries when rendering list
+    query = Invoice.query.options(joinedload(Invoice.airline))
     
     if status:
         query = query.filter_by(status=status)
